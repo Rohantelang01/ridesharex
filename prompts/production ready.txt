@@ -1,0 +1,113 @@
+I am developing "RideShareX" - a production-grade, scalable multi-role mobility platform that combines ride-sharing, vehicle rentals, and driver-on-demand services. This needs to be enterprise-ready with proper architecture, security, and scalability considerations.
+
+**Business Model:**
+Multi-sided marketplace where users can simultaneously be Customers (book rides), Drivers (provide rides), and Vehicle Owners (rent out vehicles). Revenue through commission-based transparent splitting system.
+
+**Planned Technical Architecture:**
+- **Frontend**: Next.js 14 with TypeScript, Tailwind CSS, and Shadcn/UI
+- **Backend**: Node.js with Express.js (RESTful APIs + GraphQL optional)
+- **Database**: MongoDB with Mongoose ODM (with proper indexing and aggregation)
+- **Cache**: Redis for session management and real-time data
+- **Real-time**: Socket.io for live tracking and notifications
+- **File Storage**: AWS S3 with Multer/Sharp for document processing
+- **Maps**: Google Maps API with Places, Geocoding, and Directions
+- **Payments**: Razorpay/Stripe with webhook handling
+- **Auth**: JWT with refresh tokens and role-based access control
+- **Validation**: Joi/Zod with custom middleware
+- **Logging**: Winston with MongoDB transport
+- **Testing**: Jest + Supertest for API testing
+
+**Target Feature Set:**
+
+1. **User Management System**:
+   - Multi-role authentication with document verification
+   - KYC integration for drivers and vehicle owners
+   - Role switching with proper session management
+   - Profile completion tracking and verification status
+
+2. **Smart Matching Algorithm**:
+   - Proximity-based driver-vehicle matching using MongoDB geospatial queries
+   - Load balancing for optimal resource utilization
+   - Machine learning for demand prediction
+   - Dynamic pricing based on supply-demand
+
+3. **Booking & Trip Management**:
+   - Multi-step booking flow with validation
+   - Trip scheduling and recurring rides
+   - Real-time GPS tracking with geofencing
+   - Route optimization and traffic integration
+   - Emergency features and SOS alerts
+
+4. **Payment & Financial System**:
+   - Secure payment processing with PCI compliance
+   - Automated earning splits with escrow
+   - Invoice generation and GST compliance
+   - Wallet system with top-up options
+   - MongoDB transactions for financial operations
+
+5. **Vehicle Management**:
+   - Vehicle onboarding with document verification
+   - Maintenance scheduling and reminders
+   - Insurance tracking and compliance
+   - Availability calendar management
+   - Damage reporting with image uploads
+
+6. **Analytics & Reporting**:
+   - MongoDB aggregation pipelines for analytics
+   - Real-time dashboard for all stakeholders
+   - Revenue analytics and performance metrics
+   - User behavior tracking and insights
+
+7. **Security & Compliance**:
+   - Data encryption at rest and in transit
+   - Rate limiting with express-rate-limit
+   - Input sanitization and validation
+   - MongoDB injection prevention
+   - Audit trails for all transactions
+
+**Current Development Status:**
+[SPACE FOR USER TO FILL WHAT THEY'VE IMPLEMENTED]
+
+**Currently Building:**
+[SPACE FOR USER TO FILL WHAT THEY'RE WORKING ON NOW]
+
+**MongoDB Architecture:**
+- **Sharding Strategy**: Horizontal scaling by geographic regions
+- **Indexing**: Compound indexes for performance optimization
+- **Aggregation**: Complex data processing pipelines
+- **Replication**: Master-slave setup for high availability
+- **Data Modeling**: Embedded vs Referenced document strategies
+
+**Scalability Requirements:**
+- Express.js clustering for multi-core utilization
+- MongoDB connection pooling
+- Redis caching layer for frequently accessed data
+- CDN integration for static assets
+- Load balancing with PM2 or Docker Swarm
+- Monitoring with MongoDB Compass and New Relic
+
+**Third-party Integration Plans:**
+- Google Maps Platform (Maps, Places, Directions, Geocoding)
+- Payment gateways (Razorpay, Stripe, PayU)
+- SMS providers (Twilio, TextLocal)
+- Email services (SendGrid, AWS SES)
+- Document verification (IDfy, Signzy)
+- Government API compliance (Digilocker, Aadhaar)
+
+**Performance Targets:**
+- Sub-3 second API response times
+- 99.9% uptime availability
+- Support for 100K+ concurrent users
+- Real-time updates with <1 second latency
+- MongoDB query optimization for <100ms response
+
+**Express.js Middleware Stack:**
+- CORS handling
+- Request/Response logging
+- Error handling middleware
+- Authentication middleware
+- Rate limiting
+- Input validation
+- File upload handling
+
+Please help me build and implement the specific sections I need to add now. Focus on scalable, production-ready code with proper error handling, security measures, and MongoDB best practices.

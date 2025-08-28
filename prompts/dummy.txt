@@ -1,0 +1,142 @@
+I am building "RideShareX" - a multi-role mobility platform combining Uber + Zoomcar + Rapido features. This is for presentation purposes with realistic dummy data and smooth user flows.
+
+**Project Overview:**
+RideShareX is a hybrid mobility platform where users can be Customer, Driver, AND Vehicle Owner simultaneously. Key differentiator is the multi-role system with transparent earning splits.
+
+**Target Features for the Platform:**
+1. **Multi-Role System**: Single user can switch between Customer/Driver/Owner roles
+2. **Ride Booking**: Book rides with driver+vehicle, self-drive rental, or hire-only-driver
+3. **Auto-Matching**: Smart algorithm to match nearest driver and available vehicle
+4. **Dynamic Pricing**: Distance + time + vehicle type based pricing
+5. **Earning Splits**: Transparent % distribution (Driver 60%, Owner 30%, Platform 10%)
+6. **Real-time Tracking**: Live ride tracking simulation
+7. **Group Trip Planning**: Bus/large vehicle owners can create routes, customers book seats
+
+**Planned Pages/Sections:**
+- Landing page with hero section, features overview, how it works
+- Login/Register with role selection
+- Customer Dashboard: Book rides, ride history, payments
+- Driver Dashboard: Accept/reject rides, earnings, vehicle requests
+- Vehicle Owner Dashboard: Manage vehicles, rental settings, earnings
+- Admin Panel: User management, ride analytics, revenue tracking
+- Booking Flow: Location select → Vehicle type → Driver options → Confirmation
+- Real-time Tracking: Live map with driver location, ETA updates
+- Payment Integration: Fare breakdown, payment methods, receipts
+- Profile Management: Switch roles, documents, settings
+
+**Current Progress:**
+1️⃣ Libraries / Tools used
+
+Frontend / Framework: Next.js 14, React, TypeScript, Tailwind CSS
+
+Backend / DB: Node.js, Express.js, MongoDB, Mongoose
+
+Auth / Security: bcryptjs (password hashing), JWT planned
+
+File Upload / Storage: multer, Cloudinary, streamifier
+
+Testing: Postman
+
+Dev Tools: ESLint, TypeScript types (@types/...)
+
+2️⃣ Folder / File setup
+
+C:\Users\telan\OneDrive\Desktop\ridesharex\.next
+C:\Users\telan\OneDrive\Desktop\ridesharex\app
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\auth
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\auth\route.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\bookings
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\bookings\route.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\payments
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\payments\route.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\rides
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\rides\route.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\test-db
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\test-db\route.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\vehicles
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\api\vehicles\route.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\favicon.ico
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\globals.css
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\layout.tsx
+C:\Users\telan\OneDrive\Desktop\ridesharex\app\page.tsx
+C:\Users\telan\OneDrive\Desktop\ridesharex\lib
+C:\Users\telan\OneDrive\Desktop\ridesharex\lib\db.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\models
+C:\Users\telan\OneDrive\Desktop\ridesharex\models\Booking.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\models\Payment.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\models\Ride.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\models\User.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\models\Vehicle.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\node_modules
+C:\Users\telan\OneDrive\Desktop\ridesharex\prompts
+C:\Users\telan\OneDrive\Desktop\ridesharex\public
+C:\Users\telan\OneDrive\Desktop\ridesharex\.env
+C:\Users\telan\OneDrive\Desktop\ridesharex\.gitignore
+C:\Users\telan\OneDrive\Desktop\ridesharex\eslint.config.mjs
+C:\Users\telan\OneDrive\Desktop\ridesharex\next-env.d.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\next.config.ts
+C:\Users\telan\OneDrive\Desktop\ridesharex\package-lock.json
+C:\Users\telan\OneDrive\Desktop\ridesharex\package.json
+C:\Users\telan\OneDrive\Desktop\ridesharex\postcss.config.mjs
+C:\Users\telan\OneDrive\Desktop\ridesharex\README.md
+C:\Users\telan\OneDrive\Desktop\ridesharex\tsconfig.json
+3️⃣ Website status
+
+Next.js app installed and running
+
+MongoDB connection setup (after IP whitelist)
+
+Cloudinary integration ready for document/image upload
+
+Schemas/models for User and Vehicle ready
+
+Signup API implemented with role-based fields and file upload
+
+Postman test possible for DB and signup
+**Currently Working On:**
+[SPACE FOR USER TO FILL WHAT THEY'RE BUILDING NOW]
+
+**Technical Stack:**
+- **Frontend**: Next.js 14 with TypeScript and Tailwind CSS
+- **Backend**: Node.js with Express.js
+- **Database**: MongoDB with Mongoose ODM
+- **Authentication**: JWT with bcrypt for password hashing
+- **Real-time**: Socket.io for live tracking and notifications
+- **Maps**: Google Maps API integration
+- **File Upload**: Multer for document/image uploads
+- **Validation**: Joi or Zod for data validation
+- **Environment**: dotenv for configuration management
+
+**Demo Requirements:**
+- Responsive design (mobile-first)
+- Smooth animations and transitions
+- Mock real-time updates using Socket.io
+- Realistic dummy data for 50+ users, vehicles, and rides
+- Interactive map integration with live tracking simulation
+- Modern UI with glassmorphism, gradients, and micro-animations
+- MongoDB collections for users, vehicles, rides, bookings
+
+**Demo Flow Requirements:**
+1. Landing page → Register as Customer → Book a ride
+2. Switch to Driver role → Accept ride → Start trip → Complete
+3. Switch to Vehicle Owner → Add vehicle → Set rental rates
+4. Admin view → Analytics dashboard → User management
+5. Group trip creation → Seat booking simulation
+
+**MongoDB Collections Structure:**
+- **Users**: Multi-role support (customer, driver, owner flags)
+- **Vehicles**: Owner details, availability, pricing
+- **Rides**: Trip details, status tracking
+- **Bookings**: Reservation management
+- **Payments**: Transaction records
+- **Reviews**: Rating system
+
+**UI/UX Requirements:**
+- Premium, modern design that looks production-ready
+- Intuitive user experience with clear call-to-actions
+- Visual hierarchy and consistent design system
+- Loading states, success/error messages
+- Empty states and onboarding flows
+
+Please help me build the sections I need to add now. Use realistic Indian city names, phone numbers, and payment methods. Include sample data for Delhi, Mumbai, Bangalore routes. Make it look and feel like a real working platform.
