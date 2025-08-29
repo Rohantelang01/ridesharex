@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import connectToDB from "@/lib/db";
 import User from "../../../models/User";
 import bcrypt from "bcryptjs";
-import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import streamifier from "streamifier";
 
@@ -13,11 +12,31 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Multer memory storage
-const upload = multer({ storage: multer.memoryStorage() });
+// Interface definitions for type safety
+interface DriverInfo {
+  licenseNumber?: string;
+  vehiclePreference?: string;
+  licenseImage?: string;
+  profileImage?: string;
+}
+
+interface OwnerInfo {
+  aadhaarNumber?: string;
+  aadhaarImage?: string;
+}
+
+interface PassengerInfo {
+  preferredPayment: string;
+}
+
+interface UserRoles {
+  passenger: boolean;
+  driver: boolean;
+  owner: boolean;
+}
 
 // Helper: Upload buffer to Cloudinary
-const uploadToCloudinary = (buffer: Buffer, folder: string) => {
+const uploadToCloudinary = (buffer: Buffer, folder: string): Promise<string> => {
   return new Promise<string>((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream({ folder }, (error, result) => {
       if (error || !result) return reject(error);
@@ -49,19 +68,19 @@ export async function POST(req: NextRequest) {
   if (existing) return NextResponse.json({ error: "User already exists" }, { status: 400 });
 
   // Role flags
-  const roles = {
+  const roles: UserRoles = {
     passenger: role === "passenger" || role === "both" || role === "driver",
     driver: role === "driver" || role === "both",
     owner: role === "owner" || role === "both",
   };
 
   // Passenger info
-  const passengerInfo = {
+  const passengerInfo: PassengerInfo = {
     preferredPayment: formData.get("preferredPayment")?.toString() || "UPI",
   };
 
   // Driver info
-  let driverInfo: any = {};
+  const driverInfo: DriverInfo = {};
   if (roles.driver) {
     driverInfo.licenseNumber = formData.get("licenseNumber")?.toString();
     driverInfo.vehiclePreference = formData.get("vehiclePreference")?.toString();
@@ -81,7 +100,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Owner info
-  let ownerInfo: any = {};
+  const ownerInfo: OwnerInfo = {};
   if (roles.owner) {
     ownerInfo.aadhaarNumber = formData.get("aadhaarNumber")?.toString();
     const aadhaarFile = formData.get("aadhaarFile") as File;
@@ -93,17 +112,18 @@ export async function POST(req: NextRequest) {
 
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
-const newUser = new User({
-  name,
-  email,
-  phone,
-  password: hashedPassword,
-  city,
-  roles,
-  passengerInfo,
-  driverInfo: roles.driver ? driverInfo : undefined,
-  ownerInfo: roles.owner ? ownerInfo : undefined,
-} as any);  // type cast to any for TS temporary fix
+  
+  const newUser = new User({
+    name,
+    email,
+    phone,
+    password: hashedPassword,
+    city,
+    roles,
+    passengerInfo,
+    driverInfo: roles.driver ? driverInfo : undefined,
+    ownerInfo: roles.owner ? ownerInfo : undefined,
+  });
 
   await newUser.save();
 
