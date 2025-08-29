@@ -7,6 +7,7 @@ const nextConfig = {
     ignoreBuildErrors: true,    // allow build even if TS errors (temporary)
   },
   experimental: {
+    
     optimizePackageImports: ['lucide-react'],
   },
   webpack: (config) => {
