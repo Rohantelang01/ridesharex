@@ -1,7 +1,23 @@
-import type { NextConfig } from "next";
+// next.config.ts
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': '.',
+      '@/app': './app',
+      '@/components': './components',
+      '@/lib': './lib',
+      '@/types': './types',
+      '@/hooks': './app/hooks',
+      '@/utils': './lib/utils',
+    };
+    return config;
+  },
 };
 
 export default nextConfig;
