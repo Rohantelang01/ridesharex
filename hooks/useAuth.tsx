@@ -5,7 +5,6 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { useRouter } from 'next/navigation';
 import { User, AuthState, LoginCredentials, SignupCredentials } from '@/types/auth';
 import { AuthService } from '@/lib/auth';
-import axios from 'axios'; // Import axios
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -25,14 +24,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isAuthenticated = !!user;
 
-  // Initialize auth state on mount
   useEffect(() => {
     const initAuth = () => {
       try {
-        const token = AuthService.getToken();
         const userData = AuthService.getUser();
-        
-        if (token && userData) {
+        if (userData) {
           setUser(userData);
         }
       } catch (error) {
@@ -52,6 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const response = await AuthService.login(credentials);
       setUser(response.user);
+
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Login failed');
       throw error;
@@ -67,6 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       const response = await AuthService.signup(credentials);
       setUser(response.user);
+
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Signup failed');
       throw error;
@@ -78,9 +76,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setIsLoading(true);
-      await axios.post('/api/auth/logout'); // Use the new API endpoint
+      await AuthService.logout();
       setUser(null);
-      router.push('/login'); // Redirect to login page
+      router.push('/login');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -125,7 +123,6 @@ export const useRequireAuth = () => {
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      // Redirect to login page
       router.push('/login');
     }
   }, [isLoading, isAuthenticated, router]);

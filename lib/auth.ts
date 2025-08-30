@@ -3,29 +3,7 @@ import { User, LoginCredentials, SignupCredentials, AuthResponse } from '@/types
 
 // Auth utility functions
 export class AuthService {
-  private static TOKEN_KEY = 'auth_token';
-  private static REFRESH_TOKEN_KEY = 'refresh_token';
   private static USER_KEY = 'user_data';
-
-  // Get token from localStorage
-  static getToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(this.TOKEN_KEY);
-  }
-
-  // Set token in localStorage
-  static setToken(token: string): void {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(this.TOKEN_KEY, token);
-  }
-
-  // Remove token from localStorage
-  static removeToken(): void {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-  }
 
   // Get user data from localStorage
   static getUser(): User | null {
@@ -40,11 +18,15 @@ export class AuthService {
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
   }
 
+  // Remove user data from localStorage
+  static removeUser(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(this.USER_KEY);
+  }
+
   // Check if user is authenticated
   static isAuthenticated(): boolean {
-    const token = this.getToken();
-    const user = this.getUser();
-    return !!(token && user);
+    return !!this.getUser();
   }
 
   // Login API call
@@ -58,19 +40,17 @@ export class AuthService {
         body: JSON.stringify(credentials),
       });
 
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
+      const data = await response.json();
 
-      const data: AuthResponse = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
       
-      // Store auth data
-      this.setToken(data.token);
       this.setUser(data.user);
       
       return data;
-    } catch (error) {
-      throw new Error('Login failed. Please check your credentials.');
+    } catch (error: any) {
+      throw new Error(error.message || 'Login failed. Please check your credentials.');
     }
   }
 
@@ -85,19 +65,17 @@ export class AuthService {
         body: JSON.stringify(credentials),
       });
 
-      if (!response.ok) {
-        throw new Error('Signup failed');
-      }
+      const data = await response.json();
 
-      const data: AuthResponse = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Signup failed');
+      }
       
-      // Store auth data
-      this.setToken(data.token);
       this.setUser(data.user);
       
       return data;
-    } catch (error) {
-      throw new Error('Signup failed. Please try again.');
+    } catch (error: any) {
+      throw new Error(error.message || 'Signup failed. Please try again.');
     }
   }
 
@@ -106,14 +84,11 @@ export class AuthService {
     try {
       await fetch('/api/auth/logout', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.getToken()}`,
-        },
       });
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      this.removeToken();
+      this.removeUser();
     }
   }
 
