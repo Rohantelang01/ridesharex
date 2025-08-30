@@ -2,8 +2,10 @@
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { User, AuthState, LoginCredentials, SignupCredentials } from '@/types/auth';
 import { AuthService } from '@/lib/auth';
+import axios from 'axios'; // Import axios
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -19,6 +21,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const isAuthenticated = !!user;
 
@@ -75,8 +78,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setIsLoading(true);
-      await AuthService.logout();
+      await axios.post('/api/auth/logout'); // Use the new API endpoint
       setUser(null);
+      router.push('/login'); // Redirect to login page
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -117,13 +121,14 @@ export const useAuth = (): AuthContextType => {
 // Custom hook for protected routes
 export const useRequireAuth = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const router = useRouter();
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       // Redirect to login page
-      window.location.href = '/login';
+      router.push('/login');
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isLoading, isAuthenticated, router]);
 
   return { user, isLoading, isAuthenticated };
 };

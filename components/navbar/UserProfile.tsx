@@ -74,7 +74,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ isMobile = false, onActionCli
             onClick={onActionClick}
           >
             <User className="w-5 h-5" />
-            <span>Profile</span>
+            <span>Your Profile</span>
           </Link>
 
           <Link
@@ -112,7 +112,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ isMobile = false, onActionCli
     return (
       <div className="space-y-1">
         <Link
-          href="/auth/login"
+          href="/login"
           className="flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           onClick={onActionClick}
         >
@@ -120,7 +120,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ isMobile = false, onActionCli
           <span>Login</span>
         </Link>
         <Link
-          href="/auth/signup"
+          href="/signup"
           className="flex items-center space-x-3 px-3 py-3 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
           onClick={onActionClick}
         >
@@ -177,7 +177,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ isMobile = false, onActionCli
                 onClick={() => setIsDropdownOpen(false)}
               >
                 <User className="w-4 h-4" />
-                <span>Profile</span>
+                <span>Your Profile</span>
               </Link>
 
               <Link
@@ -228,7 +228,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ isMobile = false, onActionCli
       {isDropdownOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
           <Link
-            href="/auth/login"
+            href="/login"
             className="flex items-center space-x-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             onClick={() => setIsDropdownOpen(false)}
           >
@@ -236,7 +236,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ isMobile = false, onActionCli
             <span>Login</span>
           </Link>
           <Link
-            href="/auth/signup"
+            href="/signup"
             className="flex items-center space-x-3 px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             onClick={() => setIsDropdownOpen(false)}
           >
