@@ -75,8 +75,6 @@ const OwnerInfoSchema = new Schema({
       return this.canDriveSelf;
     },
   },
-  cancelList: [CancelListItemSchema],
-  rideHistory: [{ type: Schema.Types.ObjectId, ref: "Ride" }],
 });
 
 // 6. MAIN USER INTERFACE
@@ -100,11 +98,7 @@ export interface IUser extends Document {
   };
   cancelList: (typeof CancelListItemSchema)[];
   rideHistory: (mongoose.Types.ObjectId)[];
-  roles: {
-    passenger: boolean;
-    driver: boolean;
-    owner: boolean;
-  };
+  roles: "passenger" | "driver" | "owner";
   passengerInfo?: {
     approxRideDuration?: number;
   };
@@ -140,9 +134,9 @@ const UserSchema: Schema<IUser> = new Schema(
     cancelList: [CancelListItemSchema],
     rideHistory: [{ type: Schema.Types.ObjectId, ref: "Ride" }],
     roles: {
-      passenger: { type: Boolean, default: true },
-      driver: { type: Boolean, default: false },
-      owner: { type: Boolean, default: false },
+      type: String,
+      enum: ["passenger", "driver", "owner"],
+      required: true,
     },
     passengerInfo: {
       approxRideDuration: Number,
@@ -150,13 +144,13 @@ const UserSchema: Schema<IUser> = new Schema(
     driverInfo: {
       type: DriverInfoSchema,
       required: function (this: IUser) {
-        return this.roles.driver;
+        return this.roles === 'driver';
       },
     },
     ownerInfo: {
       type: OwnerInfoSchema,
       required: function (this: IUser) {
-        return this.roles.owner;
+        return this.roles === 'owner';
       },
     },
   },
@@ -166,12 +160,12 @@ const UserSchema: Schema<IUser> = new Schema(
 // 8. PRE-SAVE HOOKS
 UserSchema.pre<IUser>("save", function (next: HookNextFunction) {
   // Validate driver age
-  if (this.roles.driver && this.age < 21) {
+  if (this.roles === 'driver' && this.age < 21) {
     return next(new Error("Driver must be at least 21 years old."));
   }
 
   // Ensure owner who can drive has driver info
-  if (this.roles.owner && this.ownerInfo?.canDriveSelf && !this.ownerInfo.driverInfo) {
+  if (this.roles === 'owner' && this.ownerInfo?.canDriveSelf && !this.ownerInfo.driverInfo) {
     return next(new Error("Owner who can drive must provide driver information."));
   }
   next();
