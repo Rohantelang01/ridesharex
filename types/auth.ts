@@ -1,10 +1,11 @@
+
 // app/types/auth.ts
 export interface User {
   id: string;
   email: string;
   name: string;
   avatar?: string;
-  role?: 'passenger' | 'driver' | 'owner';
+  roles: Array<'passenger' | 'driver' | 'owner'>;
   createdAt: Date;
   updatedAt: Date;
 }

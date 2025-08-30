@@ -1,3 +1,4 @@
+
 // app/hooks/useAuth.tsx
 'use client';
 
@@ -62,7 +63,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       setError(null);
       
-      const response = await AuthService.signup(credentials);
+      // Temporary solution until signup form is updated
+      const credentialsWithRolesArray = {
+        ...credentials,
+        roles: [credentials.role]
+      };
+
+      const response = await AuthService.signup(credentialsWithRolesArray as any);
       setUser(response.user);
 
     } catch (error) {
