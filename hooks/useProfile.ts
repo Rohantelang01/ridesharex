@@ -1,131 +1,169 @@
-// hooks/useProfile.ts
+// hooks/useProfile.ts - Debug version to identify auth issue
+'use client';
+
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { 
+  UserProfile, 
+  ProfileResponse, 
+  ProfileUpdateResponse,
+} from '@/types/profile';
 
-interface Address {
-  street?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  country?: string;
-  location: {
-    lat: number;
-    lng: number;
-  };
+interface UseProfileReturn {
+  user: UserProfile | null;
+  loading: boolean;
+  error: string | null;
+  fetchProfile: () => Promise<void>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<boolean>;
+  updateSection: (section: string, data: any) => Promise<boolean>;
+  uploadImage: (file: File, field: string) => Promise<string | null>;
+  isUpdating: boolean;
+  lastUpdated: Date | null;
 }
 
-interface EmergencyContact {
-  name: string;
-  phone: string;
-}
-
-interface Wallet {
-  totalBalance: number;
-  addedBalance: number;
-  generatedBalance: number;
-}
-
-interface ProfileData {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  age: number;
-  gender: 'male' | 'female' | 'other';
-  profileImage?: string;
-  role: 'passenger' | 'driver' | 'owner';
-  address: {
-    homeLocation?: Address;
-    currentLocation?: Address;
-  };
-  emergencyContact?: EmergencyContact;
-  wallet: Wallet;
-  passengerInfo?: {
-    approxRideDuration?: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface UpdateProfileData {
-  name?: string;
-  phone?: string;
-  age?: number;
-  gender?: 'male' | 'female' | 'other';
-  profileImage?: string;
-  address?: {
-    homeLocation?: Address;
-    currentLocation?: Address;
-  };
-  emergencyContact?: EmergencyContact;
-  passengerInfo?: {
-    approxRideDuration?: number;
-  };
-}
-
-export const useProfile = () => {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+export const useProfile = (): UseProfileReturn => {
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [updating, setUpdating] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Get auth token from localStorage or cookies
+  // Get auth data from useAuth hook
+  const authData = useAuth();
+
+  // Debug: Log auth data to see what's available
+  useEffect(() => {
+    console.log('🔍 Auth Debug Data:', {
+      authData,
+      keys: Object.keys(authData || {}),
+      user: authData?.user,
+      isAuthenticated: authData?.isAuthenticated,
+      token: authData?.token
+    });
+  }, [authData]);
+
+  // Comprehensive token retrieval function
   const getAuthToken = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth-token') || 
-             document.cookie.split('; ').find(row => row.startsWith('auth-token='))?.split('=')[1];
+    // Debug: Log all possible token sources
+    console.log('🔍 Token Sources Debug:', {
+      fromUseAuth: authData?.token,
+      localStorage: {
+        token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
+        authToken: typeof window !== 'undefined' ? localStorage.getItem('authToken') : null,
+        jwt: typeof window !== 'undefined' ? localStorage.getItem('jwt') : null,
+        accessToken: typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null,
+      },
+      sessionStorage: {
+        token: typeof window !== 'undefined' ? sessionStorage.getItem('token') : null,
+        authToken: typeof window !== 'undefined' ? sessionStorage.getItem('authToken') : null,
+      },
+      cookies: typeof window !== 'undefined' ? document.cookie : null
+    });
+
+    // Try to get token from useAuth first
+    if (authData?.token) {
+      console.log('✅ Token found from useAuth');
+      return authData.token;
     }
+
+    // Fallback to browser storage
+    if (typeof window !== 'undefined') {
+      const possibleTokens = [
+        localStorage.getItem('token'),
+        localStorage.getItem('authToken'),
+        localStorage.getItem('jwt'),
+        localStorage.getItem('accessToken'),
+        sessionStorage.getItem('token'),
+        sessionStorage.getItem('authToken'),
+        sessionStorage.getItem('jwt'),
+      ];
+
+      for (const token of possibleTokens) {
+        if (token) {
+          console.log('✅ Token found from storage:', token.substring(0, 20) + '...');
+          return token;
+        }
+      }
+
+      // Check cookies
+      const cookies = document.cookie.split('; ');
+      for (const cookie of cookies) {
+        if (cookie.startsWith('token=') || cookie.startsWith('authToken=')) {
+          const token = cookie.split('=')[1];
+          if (token) {
+            console.log('✅ Token found from cookies');
+            return token;
+          }
+        }
+      }
+    }
+
+    console.log('❌ No token found anywhere');
     return null;
   };
 
-  // Fetch profile data
-  const fetchProfile = async () => {
+  // Fetch user profile
+  const fetchProfile = async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
-
-      const token = getAuthToken();
-      if (!token) {
-        throw new Error('No authentication token found');
+      
+      console.log('🚀 Fetching profile...');
+      
+      const authToken = getAuthToken();
+      if (!authToken) {
+        // Instead of throwing error, set a more user-friendly message
+        setError('Please log in to view your profile');
+        setLoading(false);
+        return;
       }
 
-      const response = await fetch('/api/users/profile', {
+      console.log('📡 Making API request with token...');
+
+      const response = await fetch('/api/profile', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
       });
 
+      console.log('📡 API Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.log('❌ API Error:', errorData);
         throw new Error(errorData.error || 'Failed to fetch profile');
       }
 
-      const data = await response.json();
-      setProfile(data.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      console.error('Profile fetch error:', err);
+      const data: ProfileResponse = await response.json();
+      console.log('✅ Profile data received:', data);
+      setUser(data.user);
+      
+    } catch (err: any) {
+      console.error('❌ Profile fetch error:', err);
+      setError(err.message || 'Failed to fetch profile');
     } finally {
       setLoading(false);
     }
   };
 
-  // Update profile data
-  const updateProfile = async (updateData: UpdateProfileData) => {
+  // Update entire profile
+  const updateProfile = async (updateData: Partial<UserProfile>): Promise<boolean> => {
     try {
-      setUpdating(true);
+      setIsUpdating(true);
       setError(null);
 
-      const token = getAuthToken();
-      if (!token) {
-        throw new Error('No authentication token found');
+      const authToken = getAuthToken();
+      if (!authToken) {
+        setError('Authentication required');
+        return false;
       }
 
-      const response = await fetch('/api/users/profile', {
+      const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(updateData),
@@ -136,87 +174,115 @@ export const useProfile = () => {
         throw new Error(errorData.error || 'Failed to update profile');
       }
 
-      const data = await response.json();
-      setProfile(data.data);
-      return { success: true, data: data.data };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Update failed';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
+      const data: ProfileUpdateResponse = await response.json();
+      setUser(data.user);
+      setLastUpdated(new Date());
+      
+      return true;
+      
+    } catch (err: any) {
+      setError(err.message || 'Failed to update profile');
+      console.error('Profile update error:', err);
+      return false;
     } finally {
-      setUpdating(false);
+      setIsUpdating(false);
     }
   };
 
-  // Upload profile image
-  const uploadProfileImage = async (file: File) => {
+  // Update specific section
+  const updateSection = async (section: string, sectionData: any): Promise<boolean> => {
     try {
-      const formData = new FormData();
-      formData.append('image', file);
+      setIsUpdating(true);
+      setError(null);
 
-      const token = getAuthToken();
-      const response = await fetch('/api/users/upload-avatar', {
-        method: 'POST',
+      const authToken = getAuthToken();
+      if (!authToken) {
+        setError('Authentication required');
+        return false;
+      }
+
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+          section,
+          data: sectionData
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Image upload failed');
+        throw new Error(errorData.error || `Failed to update ${section} section`);
       }
 
-      const data = await response.json();
+      const data: ProfileUpdateResponse = await response.json();
+      setUser(data.user);
+      setLastUpdated(new Date());
       
-      // Update profile with new image URL
-      if (profile) {
-        setProfile({ ...profile, profileImage: data.imageUrl });
-      }
+      return true;
       
-      return { success: true, imageUrl: data.imageUrl };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Image upload failed';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
+    } catch (err: any) {
+      setError(err.message || `Failed to update ${section} section`);
+      console.error(`${section} section update error:`, err);
+      return false;
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  // Refresh profile data
-  const refreshProfile = () => {
-    fetchProfile();
+  // Upload image to Cloudinary
+  const uploadImage = async (file: File, field: string): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ridesharex');
+      formData.append('folder', 'profile-images');
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const data = await response.json();
+      return data.secure_url;
+      
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload image');
+      console.error('Image upload error:', err);
+      return null;
+    }
   };
 
-  // Check if user is specific role
-  const isRole = (role: 'passenger' | 'driver' | 'owner') => {
-    return profile?.role === role;
-  };
-
-  // Get wallet balance
-  const getWalletBalance = () => {
-    return profile?.wallet?.totalBalance || 0;
-  };
-
-  // Load profile on mount
+  // Load profile only if we can get a token
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    // Small delay to ensure auth is initialized
+    const timer = setTimeout(() => {
+      console.log('⏰ Attempting to fetch profile...');
+      fetchProfile();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []); // Remove dependencies to avoid infinite loops
 
   return {
-    // Data
-    profile,
+    user,
     loading,
     error,
-    updating,
-    
-    // Actions
+    fetchProfile,
     updateProfile,
-    uploadProfileImage,
-    refreshProfile,
-    
-    // Utilities
-    isRole,
-    getWalletBalance,
+    updateSection,
+    uploadImage,
+    isUpdating,
+    lastUpdated,
   };
 };
