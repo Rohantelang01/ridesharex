@@ -39,33 +39,35 @@ const VehicleInformationForm = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="vehicleTypes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Vehicle Types (comma-separated)</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Sedan, SUV, Hatchback" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="vehicleTypes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Vehicle Types (comma-separated)</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Sedan, SUV, Hatchback" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="kmRate.default"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Default Rate per KM</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="e.g., 10" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="kmRate.default"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Default Rate per KM</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="e.g., 10" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         
         <FormField
           control={form.control}
