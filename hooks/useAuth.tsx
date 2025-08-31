@@ -1,138 +1,137 @@
 
-// app/hooks/useAuth.tsx
+// hooks/useAuth.tsx
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, AuthState, LoginCredentials, SignupCredentials } from '@/types/auth';
-import { AuthService } from '@/lib/auth';
-
-interface AuthContextType extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<void>;
-  signup: (credentials: SignupCredentials) => Promise<void>;
-  logout: () => Promise<void>;
-  error: string | null;
-  clearError: () => void;
-}
+import { LoginData, SignupData, AuthContextType, User } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const isAuthenticated = !!user;
-
   useEffect(() => {
-    const initAuth = () => {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (storedToken && storedUser) {
       try {
-        const userData = AuthService.getUser();
-        if (userData) {
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setIsLoading(false);
+        const parsedUser = JSON.parse(storedUser);
+        setToken(storedToken);
+        setUser(parsedUser);
+        console.log("Session restored for:", parsedUser);
+      } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+        localStorage.clear();
       }
-    };
-
-    initAuth();
+    }
+    setLoading(false);
   }, []);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (data: LoginData) => {
     try {
-      setIsLoading(true);
       setError(null);
-      
-      const response = await AuthService.login(credentials);
-      setUser(response.user);
+      setLoading(true);
 
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Login failed');
-      throw error;
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Login failed');
+      }
+      
+      if (result.token && result.user) {
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('user', JSON.stringify(result.user));
+        setToken(result.token);
+        setUser(result.user);
+        
+        // --- USER REQUEST: CONSOLE LOG --- 
+        console.log("Login successful, user:", result.user);
+        // --- END USER REQUEST ---
+
+        router.push('/profile');
+      } else {
+        throw new Error('Token or user data not found in response');
+      }
+
+    } catch (err: any) {
+      setError(err.message || 'An unknown error occurred');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const signup = async (credentials: SignupCredentials) => {
+  const signup = async (data: SignupData) => {
     try {
-      setIsLoading(true);
       setError(null);
-      
-      // Temporary solution until signup form is updated
-      const credentialsWithRolesArray = {
-        ...credentials,
-        roles: [credentials.role]
-      };
+      setLoading(true);
 
-      const response = await AuthService.signup(credentialsWithRolesArray as any);
-      setUser(response.user);
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
 
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Signup failed');
-      throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Signup failed');
+      }
+
+      if (result.token && result.user) {
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('user', JSON.stringify(result.user));
+        setToken(result.token);
+        setUser(result.user);
+        console.log("Signup successful, user:", result.user);
+        router.push('/profile');
+      } else {
+        throw new Error('Token or user data not found in signup response');
+      }
+
+    } catch (err: any) {
+      setError(err.message || 'An unknown error occurred');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const logout = async () => {
     try {
-      setIsLoading(true);
-      await AuthService.logout();
+      await fetch('/api/auth/logout');
+    } catch (err) { 
+      console.error("Logout failed", err); 
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setToken(null);
       setUser(null);
       router.push('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const clearError = () => {
-    setError(null);
-  };
-
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    isAuthenticated,
-    login,
-    signup,
-    logout,
-    error,
-    clearError,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, token, loading, error, login, signup, logout, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-// Custom hook for protected routes
-export const useRequireAuth = () => {
-  const { user, isLoading, isAuthenticated } = useAuth();
-  const router = useRouter();
-  
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isLoading, isAuthenticated, router]);
-
-  return { user, isLoading, isAuthenticated };
 };

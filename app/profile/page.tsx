@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,18 +16,24 @@ const ProfilePage = () => {
   const [activeRole, setActiveRole] = useState("passenger");
   const [activeTab, setActiveTab] = useState("personal-information");
 
-  // Set active role based on user's role from model
+  // --- THIS IS THE FIX ---
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user, fetchProfile]);
+  // --- END FIX ---
+
   useEffect(() => {
     if (profile?.roles) {
-      // Using 'roles' field from your User model (not 'role')
-      if (profile.roles === "driver") {
+      if (profile.roles.includes("driver")) {
         setActiveRole("driver");
         setActiveTab("driving-information");
-      } else if (profile.roles === "owner") {
+      } else if (profile.roles.includes("owner")) {
         setActiveRole("owner");
         setActiveTab("vehicle-information");
       } else {
-        setActiveRole("passenger"); // Using 'passenger' as per your model
+        setActiveRole("passenger");
         setActiveTab("personal-information");
       }
     }
@@ -54,13 +61,11 @@ const ProfilePage = () => {
     }
   };
 
-  // Updated save handler for section-wise updates
   const handleSave = async (section: string, updatedData: any) => {
     try {
       const result = await updateSection(section, updatedData);
       if (result) {
         console.log(`${section} section updated successfully`);
-        // Optionally show success toast/message
         return { success: true };
       } else {
         console.error(`Error updating ${section} section`);
@@ -72,27 +77,30 @@ const ProfilePage = () => {
     }
   };
 
-  // Personal info save handler
   const handlePersonalSave = async (personalData: any) => {
-    return await handleSave("personal", personalData);
+    const { name, ...personalInfoData } = personalData;
+    const nameUpdateResult = await handleSave("", { name });
+    const personalInfoUpdateResult = await handleSave("personalInfo", personalInfoData);
+
+    if (nameUpdateResult.success && personalInfoUpdateResult.success) {
+      return { success: true };
+    } else {
+      return { success: false, error: "Failed to update one or more fields" };
+    }
   };
 
-  // Driving info save handler
   const handleDrivingSave = async (drivingData: any) => {
-    return await handleSave("driver", { driverInfo: drivingData });
+    return await handleSave("driverInfo", drivingData);
   };
 
-  // Vehicle info save handler
   const handleVehicleSave = async (vehicleData: any) => {
-    return await handleSave("owner", { ownerInfo: vehicleData });
+    return await handleSave("ownerInfo", vehicleData);
   };
 
-  // Payments save handler
   const handlePaymentsSave = async (paymentsData: any) => {
-    return await handleSave("personal", { wallet: paymentsData.wallet });
+    return await handleSave("wallet", paymentsData.wallet);
   };
 
-  // Loading state with your original styling
   if (loading) return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center">
@@ -101,7 +109,6 @@ const ProfilePage = () => {
     </div>
   );
 
-  // Error state
   if (error) return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center text-red-600">
@@ -124,7 +131,8 @@ const ProfilePage = () => {
             activeRole={activeRole}
             onRoleChange={handleRoleChange}
             profile={profile}
-            userRole={profile.roles} // Pass actual role from model
+            userRole={Array.isArray(profile.roles) ? profile.roles : [profile.roles]}
+
           />
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-8">
@@ -135,13 +143,13 @@ const ProfilePage = () => {
               <TabsTrigger value="personal-information">Personal</TabsTrigger>
               <TabsTrigger 
                 value="driving-information"
-                disabled={profile.roles !== "driver" && profile.roles !== "owner"}
+                disabled={!profile.roles.includes("driver") && !profile.roles.includes("owner")}
               >
                 Driving
               </TabsTrigger>
               <TabsTrigger 
                 value="vehicle-information"
-                disabled={profile.roles !== "owner"}
+                disabled={!profile.roles.includes("owner")}
               >
                 Vehicle
               </TabsTrigger>
@@ -151,12 +159,12 @@ const ProfilePage = () => {
             <TabsContent value="personal-information" className="mt-6">
               <PersonalInformationForm 
                 data={{
-                  name: profile.name,
-                  age: profile.age,
-                  gender: profile.gender,
-                  profileImage: profile.profileImage,
-                  emergencyContact: profile.emergencyContact,
-                  address: profile.address
+                  name: profile.name || '',
+                  age: profile.personalInfo?.age || '',
+                  gender: profile.personalInfo?.gender || '',
+                  profileImage: profile.personalInfo?.profileImage || '',
+                  emergencyContact: profile.personalInfo?.emergencyContact || '',
+                  address: profile.personalInfo?.address || '',
                 }}
                 onSave={handlePersonalSave}
                 isLoading={isUpdating}
@@ -164,12 +172,12 @@ const ProfilePage = () => {
             </TabsContent>
             
             <TabsContent value="driving-information" className="mt-6">
-              {(profile.roles === "driver" || profile.roles === "owner") ? (
+              {(profile.roles.includes("driver") || profile.roles.includes("owner")) ? (
                 <DrivingInformationForm 
-                  data={profile.driverInfo || (profile.ownerInfo?.driverInfo)} // Handle both driver and owner with driver info
+                  data={profile.driverInfo || (profile.ownerInfo?.driverInfo) || {}}
                   onSave={handleDrivingSave}
                   isLoading={isUpdating}
-                  userRole={profile.roles}
+                  userRole={activeRole}
                 />
               ) : (
                 <div className="text-center py-8">
@@ -179,12 +187,12 @@ const ProfilePage = () => {
             </TabsContent>
             
             <TabsContent value="vehicle-information" className="mt-6">
-              {profile.roles === "owner" ? (
+              {profile.roles.includes("owner") ? (
                 <VehicleInformationForm 
-                  data={profile.ownerInfo}
+                  data={profile.ownerInfo || {}}
                   onSave={handleVehicleSave}
                   isLoading={isUpdating}
-                  canDriveSelf={profile.ownerInfo?.canDriveSelf}
+                  canDriveSelf={profile.ownerInfo?.canDriveSelf || false}
                 />
               ) : (
                 <div className="text-center py-8">
@@ -196,9 +204,9 @@ const ProfilePage = () => {
             <TabsContent value="payments" className="mt-6">
               <PaymentsForm 
                 data={{
-                  wallet: profile.wallet,
-                  rideHistory: profile.rideHistory,
-                  cancelList: profile.cancelList
+                  wallet: profile.wallet || { balance: 0, currency: 'USD' },
+                  rideHistory: profile.rideHistory || [],
+                  cancelList: profile.cancelList || [],
                 }}
                 onSave={handlePaymentsSave}
                 isLoading={isUpdating}

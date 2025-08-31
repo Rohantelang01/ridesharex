@@ -1,12 +1,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
+import connectToDB from "@/lib/db"; // Corrected import
+import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import User from "@/models/User";
-import connectToDB from "@/lib/db";
-
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,21 +12,26 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = await req.json();
 
-    // 1. VALIDATION
+    // 1. VALIDATE INPUT
     if (!email || !password) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
     }
 
-    // 2. FIND USER
+    // 2. CHECK IF USER EXISTS
     const user = await User.findOne({ email });
     if (!user) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
     }
 
     // 3. VERIFY PASSWORD
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatch) {
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+    }
+
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined in environment variables");
     }
 
     // 4. GENERATE JWT
@@ -47,9 +50,10 @@ export async function POST(req: NextRequest) {
       path: "/",
     });
 
-    // 6. RETURN RESPONSE
+    // 6. RETURN RESPONSE WITH TOKEN
     return NextResponse.json({
       message: "Login successful",
+      token: token, 
       user: {
         id: user._id,
         name: user.name,
