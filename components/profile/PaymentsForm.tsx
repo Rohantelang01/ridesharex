@@ -91,7 +91,7 @@ const PaymentsForm = () => {
                     <Input placeholder="Your IFSC Code" {...field} />
                   </FormControl>
                   <FormMessage /> 
-                </-FormItem>
+                </FormItem>
               )}
             />
           </div>
