@@ -17,10 +17,12 @@ import { useRouter } from "next/navigation";
 
 const ProfilePage = () => {
   const { user } = useAuth();
-  const { user: profile, loading, error, updateSection, fetchProfile, isUpdating } = useProfile();
+  const { user: profile, loading, error, updateSection, fetchProfile, isUpdating, updateProfile } = useProfile();
   const [activeRole, setActiveRole] = useState("passenger");
   const [activeTab, setActiveTab] = useState("personal-information");
   const [editingTab, setEditingTab] = useState<string | null>(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const router = useRouter();
 
   // --- THIS IS THE FIX ---
@@ -33,10 +35,14 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (profile?.roles) {
-      if (profile.roles.includes("driver")) {
+      // Handle single role string (User model stores roles as single string)
+      const currentRole = profile.roles;
+      
+      // Set active role based on available role
+      if (currentRole === "driver") {
         setActiveRole("driver");
         setActiveTab("driving-information");
-      } else if (profile.roles.includes("owner")) {
+      } else if (currentRole === "owner") {
         setActiveRole("owner");
         setActiveTab("vehicle-information");
       } else {
@@ -78,6 +84,53 @@ const ProfilePage = () => {
     setEditingTab(null);
   };
 
+  const handleAddRole = async (newRole: 'driver' | 'owner') => {
+    try {
+      console.log(`Adding new role: ${newRole}`);
+      
+      if (!profile) {
+        console.error('Profile is null, cannot add role');
+        alert('Profile not loaded. Please refresh the page and try again.');
+        return;
+      }
+      
+      // Since the User model stores roles as a single string, we need to update it directly
+      // For now, we'll replace the current role with the new one
+      // In a real application, you might want to modify the database schema to support multiple roles
+      console.log('Current role:', profile.roles);
+      console.log('New role:', newRole);
+      
+      // Update the user's role in the database using updateProfile for root-level fields
+      const updateResult = await updateProfile({ roles: newRole });
+      
+      if (updateResult) {
+        console.log(`${newRole} role added successfully`);
+        // Refresh profile data to get updated role
+        await fetchProfile();
+        
+        // Switch to the new role's tab and automatically open edit mode
+        if (newRole === "driver") {
+          setActiveRole("driver");
+          setActiveTab("driving-information");
+          setEditingTab("driving-information"); // Automatically open edit mode
+        } else if (newRole === "owner") {
+          setActiveRole("owner");
+          setActiveTab("vehicle-information");
+          setEditingTab("vehicle-information"); // Automatically open edit mode
+        }
+        
+        // Show success message and guide user to fill the form
+        alert(`${newRole.charAt(0).toUpperCase() + newRole.slice(1)} role added successfully! Please fill in the required information below.`);
+      } else {
+        console.error(`Failed to add ${newRole} role`);
+        alert(`Failed to add ${newRole} role. Please try again.`);
+      }
+    } catch (err) {
+      console.error(`Error adding ${newRole} role:`, err);
+      alert(`Error adding ${newRole} role. Please try again.`);
+    }
+  };
+
   const handleSave = async (section: string, updatedData: any) => {
     try {
       console.log(`Attempting to update ${section} section with data:`, updatedData);
@@ -88,6 +141,23 @@ const ProfilePage = () => {
         console.log(`${section} section updated successfully`);
         setEditingTab(null); // Exit edit mode after successful save
         await fetchProfile(); // Refresh profile data
+        
+        // Show success message based on section
+        if (section === "driverInfo") {
+          setSuccessMessage("Driver information saved successfully! You can now start accepting rides.");
+        } else if (section === "ownerInfo") {
+          setSuccessMessage("Vehicle owner information saved successfully! You can now manage your vehicles.");
+        } else {
+          setSuccessMessage("Information saved successfully!");
+        }
+        setShowSuccessMessage(true);
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+          setSuccessMessage("");
+        }, 5000);
+        
         return { success: true };
       } else {
         console.error(`Error updating ${section} section - updateSection returned false`);
@@ -150,10 +220,41 @@ const ProfilePage = () => {
         <>
           <UserProfileHero
             activeRole={activeRole}
-            onRoleChange={handleRoleChange}
             profile={profile}
-            userRole={Array.isArray(profile.roles) ? profile.roles : [profile.roles]}
+            userRole={[profile.roles]} // Convert single role to array for display
+            onRoleChange={handleRoleChange}
+            onAddRole={handleAddRole}
+            isEditing={editingTab !== null} // Pass editing state
           />
+
+          {/* Success Message */}
+          {showSuccessMessage && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                    {successMessage}
+                  </p>
+                </div>
+                <div className="ml-auto pl-3">
+                  <button
+                    onClick={() => setShowSuccessMessage(false)}
+                    className="inline-flex text-green-400 hover:text-green-600 dark:hover:text-green-300"
+                  >
+                    <span className="sr-only">Close</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-8">
             <TabsList
@@ -163,13 +264,13 @@ const ProfilePage = () => {
               <TabsTrigger value="personal-information">Personal</TabsTrigger>
               <TabsTrigger 
                 value="driving-information"
-                disabled={!profile.roles.includes("driver") && !profile.roles.includes("owner")}
+                disabled={profile.roles !== "driver" && profile.roles !== "owner"}
               >
                 Driving
               </TabsTrigger>
               <TabsTrigger 
                 value="vehicle-information"
-                disabled={!profile.roles.includes("owner")}
+                disabled={profile.roles !== "owner"}
               >
                 Vehicle
               </TabsTrigger>
@@ -210,7 +311,7 @@ const ProfilePage = () => {
             </TabsContent>
             
             <TabsContent value="driving-information" className="mt-6">
-              {(profile.roles.includes("driver") || profile.roles.includes("owner")) ? (
+              {profile.roles === "driver" || profile.roles === "owner" ? (
                 editingTab === "driving-information" ? (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
@@ -243,7 +344,7 @@ const ProfilePage = () => {
             </TabsContent>
             
             <TabsContent value="vehicle-information" className="mt-6">
-              {profile.roles.includes("owner") ? (
+              {profile.roles === "owner" ? (
                 editingTab === "vehicle-information" ? (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
