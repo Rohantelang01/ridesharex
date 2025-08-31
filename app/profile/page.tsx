@@ -4,17 +4,24 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import PersonalInformationForm from "@/components/profile/PersonalInformationForm";
+import PersonalInformationDisplay from "@/components/profile/PersonalInformationDisplay";
 import DrivingInformationForm from "@/components/profile/DrivingInformationForm";
+import DrivingInformationDisplay from "@/components/profile/DrivingInformationDisplay";
 import VehicleInformationForm from "@/components/profile/VehicleInformationForm";
+import VehicleInformationDisplay from "@/components/profile/VehicleInformationDisplay";
 import PaymentsForm from "@/components/profile/PaymentsForm";
+import PaymentsDisplay from "@/components/profile/PaymentsDisplay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserProfileHero from "@/components/profile/UserProfileHero";
+import { useRouter } from "next/navigation";
 
 const ProfilePage = () => {
   const { user } = useAuth();
   const { user: profile, loading, error, updateSection, fetchProfile, isUpdating } = useProfile();
   const [activeRole, setActiveRole] = useState("passenger");
   const [activeTab, setActiveTab] = useState("personal-information");
+  const [editingTab, setEditingTab] = useState<string | null>(null);
+  const router = useRouter();
 
   // --- THIS IS THE FIX ---
   useEffect(() => {
@@ -48,6 +55,7 @@ const ProfilePage = () => {
     } else {
       setActiveTab("personal-information");
     }
+    setEditingTab(null); // Reset editing state when role changes
   };
 
   const handleTabChange = (tab: string) => {
@@ -59,33 +67,46 @@ const ProfilePage = () => {
     } else {
       setActiveRole("passenger");
     }
+    setEditingTab(null); // Reset editing state when tab changes
+  };
+
+  const handleEdit = (tab: string) => {
+    setEditingTab(tab);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTab(null);
   };
 
   const handleSave = async (section: string, updatedData: any) => {
     try {
+      console.log(`Attempting to update ${section} section with data:`, updatedData);
       const result = await updateSection(section, updatedData);
+      console.log(`Update result for ${section}:`, result);
+      
       if (result) {
         console.log(`${section} section updated successfully`);
+        setEditingTab(null); // Exit edit mode after successful save
+        await fetchProfile(); // Refresh profile data
         return { success: true };
       } else {
-        console.error(`Error updating ${section} section`);
-        return { success: false, error: "Update failed" };
+        console.error(`Error updating ${section} section - updateSection returned false`);
+        return { success: false, error: "Update failed - updateSection returned false" };
       }
     } catch (err) {
       console.error(`Error updating ${section} section:`, err);
-      return { success: false, error: "Update failed" };
+      return { success: false, error: err instanceof Error ? err.message : "Update failed" };
     }
   };
 
   const handlePersonalSave = async (personalData: any) => {
-    const { name, ...personalInfoData } = personalData;
-    const nameUpdateResult = await handleSave("", { name });
-    const personalInfoUpdateResult = await handleSave("personalInfo", personalInfoData);
+    // Update all personal fields at once since they're at the root level of the User model
+    const updateResult = await handleSave("", personalData);
 
-    if (nameUpdateResult.success && personalInfoUpdateResult.success) {
+    if (updateResult.success) {
       return { success: true };
     } else {
-      return { success: false, error: "Failed to update one or more fields" };
+      return { success: false, error: updateResult.error || "Failed to update personal information" };
     }
   };
 
@@ -98,7 +119,7 @@ const ProfilePage = () => {
   };
 
   const handlePaymentsSave = async (paymentsData: any) => {
-    return await handleSave("wallet", paymentsData.wallet);
+    return await handleSave("wallet", paymentsData);
   };
 
   if (loading) return (
@@ -132,7 +153,6 @@ const ProfilePage = () => {
             onRoleChange={handleRoleChange}
             profile={profile}
             userRole={Array.isArray(profile.roles) ? profile.roles : [profile.roles]}
-
           />
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-8">
@@ -157,28 +177,64 @@ const ProfilePage = () => {
             </TabsList>
 
             <TabsContent value="personal-information" className="mt-6">
-              <PersonalInformationForm 
-                data={{
-                  name: profile.name || '',
-                  age: profile.personalInfo?.age || '',
-                  gender: profile.personalInfo?.gender || '',
-                  profileImage: profile.personalInfo?.profileImage || '',
-                  emergencyContact: profile.personalInfo?.emergencyContact || '',
-                  address: profile.personalInfo?.address || '',
-                }}
-                onSave={handlePersonalSave}
-                isLoading={isUpdating}
-              />
+              {editingTab === "personal-information" ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Edit Personal Information</h3>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <PersonalInformationForm 
+                    data={{
+                      name: profile.name || '',
+                      age: profile.age || 18,
+                      gender: profile.gender || 'male',
+                      profileImage: profile.profileImage || '',
+                      emergencyContact: profile.emergencyContact || { name: '', phone: '' },
+                      address: profile.address || { homeLocation: undefined, currentLocation: undefined },
+                    }}
+                    onSave={handlePersonalSave}
+                    isLoading={isUpdating}
+                  />
+                </div>
+              ) : (
+                <PersonalInformationDisplay
+                  profile={profile}
+                  onEdit={() => handleEdit("personal-information")}
+                />
+              )}
             </TabsContent>
             
             <TabsContent value="driving-information" className="mt-6">
               {(profile.roles.includes("driver") || profile.roles.includes("owner")) ? (
-                <DrivingInformationForm 
-                  data={profile.driverInfo || (profile.ownerInfo?.driverInfo) || {}}
-                  onSave={handleDrivingSave}
-                  isLoading={isUpdating}
-                  userRole={activeRole}
-                />
+                editingTab === "driving-information" ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">Edit Driving Information</h3>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <DrivingInformationForm 
+                      data={profile.driverInfo || (profile.ownerInfo?.driverInfo) || {}}
+                      onSave={handleDrivingSave}
+                      isLoading={isUpdating}
+                      userRole={activeRole}
+                    />
+                  </div>
+                ) : (
+                  <DrivingInformationDisplay
+                    profile={profile}
+                    onEdit={() => handleEdit("driving-information")}
+                  />
+                )
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-500">Driving information is only available for drivers and owners</p>
@@ -188,12 +244,30 @@ const ProfilePage = () => {
             
             <TabsContent value="vehicle-information" className="mt-6">
               {profile.roles.includes("owner") ? (
-                <VehicleInformationForm 
-                  data={profile.ownerInfo || {}}
-                  onSave={handleVehicleSave}
-                  isLoading={isUpdating}
-                  canDriveSelf={profile.ownerInfo?.canDriveSelf || false}
-                />
+                editingTab === "vehicle-information" ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">Edit Vehicle Information</h3>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <VehicleInformationForm 
+                      data={profile.ownerInfo || {}}
+                      onSave={handleVehicleSave}
+                      isLoading={isUpdating}
+                      canDriveSelf={profile.ownerInfo?.canDriveSelf || false}
+                    />
+                  </div>
+                ) : (
+                  <VehicleInformationDisplay
+                    profile={profile}
+                    onEdit={() => handleEdit("vehicle-information")}
+                  />
+                )
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-500">Vehicle information is only available for vehicle owners</p>
@@ -202,15 +276,31 @@ const ProfilePage = () => {
             </TabsContent>
             
             <TabsContent value="payments" className="mt-6">
-              <PaymentsForm 
-                data={{
-                  wallet: profile.wallet || { balance: 0, currency: 'USD' },
-                  rideHistory: profile.rideHistory || [],
-                  cancelList: profile.cancelList || [],
-                }}
-                onSave={handlePaymentsSave}
-                isLoading={isUpdating}
-              />
+              {editingTab === "payments" ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Edit Payment Information</h3>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <PaymentsForm 
+                    data={{
+                      wallet: profile.wallet || { totalBalance: 0, addedBalance: 0, generatedBalance: 0 }
+                    }}
+                    onSave={handlePaymentsSave}
+                    isLoading={isUpdating}
+                  />
+                </div>
+              ) : (
+                <PaymentsDisplay
+                  profile={profile}
+                  onEdit={() => handleEdit("payments")}
+                />
+              )}
             </TabsContent>
           </Tabs>
         </>

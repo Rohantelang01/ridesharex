@@ -39,13 +39,24 @@ const UserProfileHero = ({
       default: return null;
     }
   }
+
+  // Get profile image from the correct field
+  const getProfileImage = () => {
+    if (profile.profileImage) {
+      return profile.profileImage;
+    }
+    if (profile.personalInfo?.profileImage) {
+      return profile.personalInfo.profileImage;
+    }
+    return '/placeholder-user.jpg';
+  };
   
   return (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-8">
       <div className="flex flex-col md:flex-row items-center">
         <div className="relative mb-4 md:mb-0 md:mr-6">
           <Image
-            src={profile.personalInfo?.profilePicture || '/placeholder-user.jpg'}
+            src={getProfileImage()}
             alt="Profile"
             width={128}
             height={128}

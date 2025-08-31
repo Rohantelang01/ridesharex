@@ -27,8 +27,8 @@ const formSchema = z.object({
   homeLocationState: z.string().optional(),
   homeLocationPincode: z.string().regex(/^\d{6}$/, { message: "Pincode must be 6 digits." }).optional().or(z.literal("")),
   homeLocationCountry: z.string().default("India"),
-  homeLocationLat: z.coerce.number().min(-90).max(90).optional(),
-  homeLocationLng: z.coerce.number().min(-180).max(180).optional(),
+  homeLocationLat: z.coerce.number().min(-90).max(90).optional().or(z.literal("")),
+  homeLocationLng: z.coerce.number().min(-180).max(180).optional().or(z.literal("")),
   // Emergency Contact
   emergencyContactName: z.string().optional(),
   emergencyContactPhone: z.string().regex(/^[6-9]\d{9}$/, { message: "Please enter a valid Indian phone number." }).optional().or(z.literal("")),
@@ -77,8 +77,8 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
       homeLocationState: "",
       homeLocationPincode: "",
       homeLocationCountry: "India",
-      homeLocationLat: undefined,
-      homeLocationLng: undefined,
+      homeLocationLat: "",
+      homeLocationLng: "",
       emergencyContactName: "",
       emergencyContactPhone: "",
     },
@@ -97,8 +97,8 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
         homeLocationState: data.address?.homeLocation?.state || "",
         homeLocationPincode: data.address?.homeLocation?.pincode || "",
         homeLocationCountry: data.address?.homeLocation?.country || "India",
-        homeLocationLat: data.address?.homeLocation?.location?.lat,
-        homeLocationLng: data.address?.homeLocation?.location?.lng,
+        homeLocationLat: data.address?.homeLocation?.location?.lat?.toString() || "",
+        homeLocationLng: data.address?.homeLocation?.location?.lng?.toString() || "",
         emergencyContactName: data.emergencyContact?.name || "",
         emergencyContactPhone: data.emergencyContact?.phone || "",
       });
@@ -127,8 +127,8 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             pincode: values.homeLocationPincode,
             country: values.homeLocationCountry,
             location: (values.homeLocationLat && values.homeLocationLng) ? {
-              lat: values.homeLocationLat,
-              lng: values.homeLocationLng,
+              lat: parseFloat(values.homeLocationLat) || 0,
+              lng: parseFloat(values.homeLocationLng) || 0,
             } : { lat: 0, lng: 0 } // Default coordinates if not provided
           } : undefined
         }
@@ -333,13 +333,15 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
           </div>
         </div>
 
-        <Button 
-          type="submit" 
-          disabled={isSubmitting || isLoading}
-          className="w-full md:w-auto"
-        >
-          {isSubmitting || isLoading ? "Saving..." : "Save Personal Information"}
-        </Button>
+        <div className="flex gap-4">
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || isLoading}
+            className="flex-1"
+          >
+            {isSubmitting || isLoading ? "Saving..." : "Save Personal Information"}
+          </Button>
+        </div>
       </form>
     </Form>
   );

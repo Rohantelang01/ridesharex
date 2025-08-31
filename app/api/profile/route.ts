@@ -96,6 +96,8 @@ export async function PATCH(request: NextRequest) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
       
       const { section, data } = await request.json();
+      
+      console.log('PATCH request received:', { section, data, userId: decoded.userId });
   
       if (!data) {
         return NextResponse.json({ error: 'Data is required for patch' }, { status: 400 });
@@ -110,6 +112,8 @@ export async function PATCH(request: NextRequest) {
       } else {
         Object.assign(update, data);
       }
+
+      console.log('Update object:', update);
 
       if (Object.keys(update).some(k => k.includes('password') || k.includes('email') || k.includes('roles'))) {
         return NextResponse.json({ error: 'Cannot update sensitive fields' }, { status: 400 });
@@ -127,6 +131,8 @@ export async function PATCH(request: NextRequest) {
       if (!updatedUser) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
+
+      console.log('User updated successfully:', updatedUser._id);
   
       return NextResponse.json({
         success: true,
@@ -139,7 +145,8 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
       }
       return NextResponse.json({ 
-        error: 'Failed to update profile section' 
+        error: 'Failed to update profile section',
+        details: error instanceof Error ? error.message : 'Unknown error'
       }, { status: 500 });
     }
   }

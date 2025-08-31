@@ -33,7 +33,7 @@ export const useProfile = (): UseProfileReturn => {
     }
     if (typeof window !== 'undefined') {
       // --- THIS IS THE FIX ---
-      return localStorage.getItem('auth-token'); // Corrected key to 'auth-token'
+      return localStorage.getItem('token'); // Corrected key to match auth hook
     }
     return null;
   }, [authData?.token]);

@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
 
 const formSchema = z.object({
   upiId: z.string().optional(),
@@ -21,7 +22,15 @@ const formSchema = z.object({
   ifscCode: z.string().optional(),
 });
 
-const PaymentsForm = () => {
+interface PaymentsFormProps {
+  data?: any;
+  onSave: (data: any) => Promise<{ success: boolean; error?: string }>;
+  isLoading: boolean;
+}
+
+const PaymentsForm = ({ data, onSave, isLoading }: PaymentsFormProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -32,8 +41,36 @@ const PaymentsForm = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
+  // Populate form with existing data
+  useEffect(() => {
+    if (data) {
+      form.reset({
+        upiId: data.upiId || "",
+        bankName: data.bankName || "",
+        accountNumber: data.accountNumber || "",
+        ifscCode: data.ifscCode || "",
+      });
+    }
+  }, [data, form]);
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+    
+    try {
+      const result = await onSave(values);
+      
+      if (result.success) {
+        console.log("Payment information updated successfully");
+        // You can show a success toast here
+      } else {
+        console.error("Failed to update payment information:", result.error);
+        // You can show an error toast here
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -52,6 +89,7 @@ const PaymentsForm = () => {
             </FormItem>
           )}
         />
+        
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Bank Account Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -96,7 +134,16 @@ const PaymentsForm = () => {
             />
           </div>
         </div>
-        <Button type="submit">Submit</Button>
+        
+        <div className="flex gap-4">
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || isLoading}
+            className="flex-1"
+          >
+            {isSubmitting || isLoading ? "Saving..." : "Save Payment Information"}
+          </Button>
+        </div>
       </form>
     </Form>
   );
