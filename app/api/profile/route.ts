@@ -1,21 +1,34 @@
-
 // app/api/profile/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import User from '@/models/User';
 import connectToDB from '@/lib/db';
 import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
+
+// Helper function to get and verify token from cookies
+async function getTokenFromCookies() {
+  const token = cookies().get('token')?.value;
+  
+  if (!token) {
+    throw new Error('No token found');
+  }
+
+  const JWT_SECRET = process.env.JWT_SECRET;
+  if (!JWT_SECRET) {
+    throw new Error('JWT secret not configured');
+  }
+
+  const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+  return decoded;
+}
 
 // GET - Fetch user profile data
 export async function GET(request: NextRequest) {
   try {
     await connectToDB();
 
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    // ✅ Get token from cookies instead of Authorization header
+    const decoded = await getTokenFromCookies();
 
     const user = await User.findById(decoded.userId)
       .populate('ownerInfo.vehicles')
@@ -30,8 +43,8 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Profile fetch error:', error);
-    if (error instanceof jwt.JsonWebTokenError) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    if (error instanceof jwt.JsonWebTokenError || error?.message === 'No token found') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
     return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
   }
@@ -42,12 +55,8 @@ export async function PUT(request: NextRequest) {
   try {
     await connectToDB();
     
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    // ✅ Get token from cookies instead of Authorization header
+    const decoded = await getTokenFromCookies();
     
     const data = await request.json();
 
@@ -76,8 +85,8 @@ export async function PUT(request: NextRequest) {
 
   } catch (error) {
     console.error('Profile update error:', error);
-    if (error instanceof jwt.JsonWebTokenError) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    if (error instanceof jwt.JsonWebTokenError || error?.message === 'No token found') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
     return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
@@ -88,12 +97,8 @@ export async function PATCH(request: NextRequest) {
     try {
       await connectToDB();
       
-      const token = request.headers.get('authorization')?.replace('Bearer ', '');
-      if (!token) {
-        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-      }
-  
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+      // ✅ Get token from cookies instead of Authorization header
+      const decoded = await getTokenFromCookies();
       
       const { section, data } = await request.json();
       
@@ -141,12 +146,12 @@ export async function PATCH(request: NextRequest) {
   
     } catch (error) {
       console.error('Profile patch error:', error);
-      if (error instanceof jwt.JsonWebTokenError) {
-        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      if (error instanceof jwt.JsonWebTokenError || error?.message === 'No token found') {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
       return NextResponse.json({ 
         error: 'Failed to update profile section',
         details: error instanceof Error ? error.message : 'Unknown error'
       }, { status: 500 });
     }
-  }
+}
