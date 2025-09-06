@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       message: "User created successfully",
+      token: token, // The token is now included in the response
       user: {
         id: newUser._id,
         name: newUser.name,

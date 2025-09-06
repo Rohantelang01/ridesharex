@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import connectToDB from "@/lib/db"; // Corrected import
+import connectToDB from "@/lib/db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -12,21 +12,20 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = await req.json();
 
-    // 1. VALIDATE INPUT
     if (!email || !password) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
     }
 
-    // 2. CHECK IF USER EXISTS
     const user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+      // More specific error message for development
+      return NextResponse.json({ message: "No account found with that email address." }, { status: 401 });
     }
 
-    // 3. VERIFY PASSWORD
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+      // More specific error message for development
+      return NextResponse.json({ message: "The password you entered is incorrect." }, { status: 401 });
     }
 
     const JWT_SECRET = process.env.JWT_SECRET;
@@ -34,14 +33,12 @@ export async function POST(req: NextRequest) {
       throw new Error("JWT_SECRET is not defined in environment variables");
     }
 
-    // 4. GENERATE JWT
     const token = jwt.sign(
       { userId: user._id, name: user.name, email: user.email },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // 5. SET COOKIE
     cookies().set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== "development",
@@ -50,7 +47,6 @@ export async function POST(req: NextRequest) {
       path: "/",
     });
 
-    // 6. RETURN RESPONSE WITH TOKEN
     return NextResponse.json({
       message: "Login successful",
       token: token, 

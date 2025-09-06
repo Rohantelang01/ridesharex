@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,10 +30,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export function SignupForm() {
-  const router = useRouter();
-  const { signup } = useAuth();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { signup, loading, error } = useAuth();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -44,22 +39,13 @@ export function SignupForm() {
       email: "",
       phone: "",
       password: "",
+      age: "",
+      gender: "",
     },
   });
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await signup(data);
-      console.log("Signup successful");
-      router.push("/");
-    } catch (err: any) {
-      console.error("Signup failed:", err);
-      setError(err.message || "An unexpected error occurred.");
-    } finally {
-      setLoading(false);
-    }
+  const onSubmit: SubmitHandler<FormData> = (data) => {
+    signup(data);
   };
 
   return (
@@ -68,7 +54,7 @@ export function SignupForm() {
         {error && (
           <Alert variant="destructive">
             <Terminal className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>Signup Failed</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -94,7 +80,6 @@ export function SignupForm() {
               <FormControl>
                 <Input placeholder="john.doe@example.com" {...field} />
               </FormControl>
-
               <FormMessage />
             </FormItem>
           )}
