@@ -26,10 +26,10 @@ import {
 interface UserProfileHeroProps {
   profile: UserProfile;
   activeRole: string;
-  userRole: string[]; // It's an array
+  userRole: (string | string[])[]; // Allow for nested arrays
   onRoleChange: (newRole: string) => void;
   onAddRole?: (role: 'driver' | 'owner') => void;
-  isEditing?: boolean; // Add this prop to show editing state
+  isEditing?: boolean;
 }
 
 const UserProfileHero = ({ 
@@ -42,9 +42,12 @@ const UserProfileHero = ({
   const [isEditing, setIsEditing] = useState(false);
   const [selectedNewRole, setSelectedNewRole] = useState<string>('');
 
+  // Ensure 'passenger' is always present and flatten the roles array
+  const flatUserRoles = Array.from(new Set(['passenger', ...userRole.flat()]));
+
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'user': return <User className="w-4 h-4 mr-2" />;
+      case 'passenger': return <User className="w-4 h-4 mr-2" />;
       case 'driver': return <Car className="w-4 h-4 mr-2" />;
       case 'owner': return <Building className="w-4 h-4 mr-2" />;
       case 'admin': return <Shield className="w-4 h-4 mr-2" />;
@@ -70,12 +73,8 @@ const UserProfileHero = ({
     }
   }
 
-  // Get profile image from the correct field
   const getProfileImage = () => {
-    if (profile.profileImage) {
-      return profile.profileImage;
-    }
-    return '/placeholder-user.jpg';
+    return profile.profileImage || '/placeholder-user.jpg';
   };
 
   const handleAddRole = () => {
@@ -85,7 +84,7 @@ const UserProfileHero = ({
     }
   };
 
-  const availableRoles = ['driver', 'owner'].filter(role => !userRole.includes(role));
+  const availableRoles = ['driver', 'owner'].filter(role => !flatUserRoles.includes(role));
   
   return (
     <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-8">
@@ -112,19 +111,15 @@ const UserProfileHero = ({
           <p className="text-md text-gray-500 dark:text-gray-400">{profile.email}</p>
           
           <div className="flex items-center justify-center md:justify-start mt-4 space-x-2">
-            {/* Display current roles */}
-            {userRole && userRole.length > 0 && (
-              userRole.map((role) => (
-                <span
-                  key={role}
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(role)}`}
-                >
-                  {getRoleIcon(role)} {role.charAt(0).toUpperCase() + role.slice(1)}
-                </span>
-              ))
-            )}
+            {flatUserRoles.map((role) => (
+              <span
+                key={role}
+                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(role)}`}
+              >
+                {getRoleIcon(role)} {role.charAt(0).toUpperCase() + role.slice(1)}
+              </span>
+            ))}
             
-            {/* Add new role button */}
             {availableRoles.length > 0 && (
               <Dialog>
                 <DialogTrigger asChild>
@@ -136,9 +131,7 @@ const UserProfileHero = ({
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Add New Role</DialogTitle>
-                    <DialogDescription>
-                      Choose a new role to expand your capabilities on the platform.
-                    </DialogDescription>
+                    <DialogDescription>Choose a role to expand your capabilities.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-3">
@@ -170,19 +163,13 @@ const UserProfileHero = ({
                     {selectedNewRole && (
                       <div className="pt-4 border-t">
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                          You'll need to provide additional information for the <strong className="capitalize">{selectedNewRole}</strong> role.
+                          You'll need to provide more information for the <strong className="capitalize">{selectedNewRole}</strong> role.
                         </p>
                         <div className="flex space-x-2">
-                          <Button 
-                            onClick={handleAddRole}
-                            className="flex-1"
-                          >
+                          <Button onClick={handleAddRole} className="flex-1">
                             Add {selectedNewRole.charAt(0).toUpperCase() + selectedNewRole.slice(1)} Role
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setSelectedNewRole('')}
-                          >
+                          <Button variant="outline" onClick={() => setSelectedNewRole('')}>
                             Cancel
                           </Button>
                         </div>
@@ -194,24 +181,22 @@ const UserProfileHero = ({
             )}
           </div>
           
-          {/* Show helpful message when editing */}
           {isEditing && (
             <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <p className="text-sm text-blue-700 dark:text-blue-300 text-center">
-                📝 Please fill in all the required information for your new role. This information is necessary to activate your account as a {activeRole}.
+                Please fill in the required information for your new role as a {activeRole}.
               </p>
             </div>
           )}
            
-          {/* Role switcher for existing roles */}
-          {userRole.length > 1 && (
+          {flatUserRoles.length > 1 && (
             <div className="mt-4">
               <Select value={activeRole} onValueChange={onRoleChange}>
                 <SelectTrigger className="w-[180px] text-sm">
                   <SelectValue placeholder="Switch role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {userRole.map((role) => (
+                  {flatUserRoles.map((role) => (
                     <SelectItem key={role} value={role} className="capitalize">
                        {getRoleIcon(role)} {role.charAt(0).toUpperCase() + role.slice(1)}
                     </SelectItem>

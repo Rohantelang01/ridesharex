@@ -1,181 +1,185 @@
 
-import mongoose, { Schema, Document, HookNextFunction } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
+import { IWallet, walletSchema } from './Wallet';
 
-// 1. ADDRESS SCHEMA
-const AddressSchema = new Schema({
-  street: String,
-  city: String,
-  state: String,
-  pincode: {
-    type: String,
-    validate: {
-      validator: function (v: string) {
-        return /^\d{6}$/.test(v);
-      },
-      message: (props: any) => `${props.value} is not a valid pincode!`,
-    },
-  },
-  country: { type: String, default: "India" },
-  location: {
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true },
-  },
-});
+// Interface for Permanent Address
+export interface IPermanentAddress {
+  addressLine1: string;
+  addressLine2?: string;
+  village?: string;
+  tehsil?: string;
+  district: string;
+  state: string;
+  pincode: string;
+}
 
-// 2. DRIVER DOCUMENTS SCHEMA
-const DriverDocumentsSchema = new Schema({
-  licenseImageFront: { type: String, required: true },
-  licenseImageBack: { type: String, required: true },
-  aadharImage: { type: String, required: true },
-  panImage: { type: String, required: true },
-});
+// Interface for Current Location
+export interface ICurrentLocation {
+  address?: string;
+  coordinates?: {
+    lat?: number;
+    lng?: number;
+  };
+  lastUpdated?: Date;
+}
 
-// 3. DRIVER INFO SCHEMA
-const DriverInfoSchema = new Schema({
-  licenseNumber: { type: String, required: true },
-  licenseExpiry: { type: Date, required: true },
-  experience: { type: Number, required: true, min: 0 }, // years
-  rating: { type: Number, default: 0, min: 0, max: 5 },
-  totalRides: { type: Number, default: 0 },
-  vehicleTypes: [{ type: String }],
-  isAvailable: { type: Boolean, default: true },
-  driverImage: String,
-  documents: { type: DriverDocumentsSchema, required: true },
-  hourlyRate: { type: Number, required: true },
-  currentRideId: { type: Schema.Types.ObjectId, ref: "Ride" },
-  location: {
-    lat: { type: Number, required: true },
-    lng: { type: Number, required: true },
-  },
-});
+// Interface for Verification
+export interface IVerification {
+  email?: boolean;
+  phone?: boolean;
+  kyc?: boolean;
+}
 
-// 4. CANCEL LIST ITEM SCHEMA
-const CancelListItemSchema = new Schema({
-  rideId: { type: Schema.Types.ObjectId, ref: "Ride", required: true },
-  cancelledBy: { type: String, enum: ["passenger", "driver", "owner", "platform"], required: true },
-  cancelDate: { type: Date, default: Date.now },
-  distanceTravelled: { type: Number, default: 0 },
-  driverCharge: { type: Number, default: 0 },
-  ownerCharge: { type: Number, default: 0 },
-  platformCharge: { type: Number, default: 0 },
-  reason: String,
-});
+// Interface for Driver Information
+export interface IDriverInfo {
+  licenseNumber?: string;
+  licenseImage?: string;
+  idProof?: string;
+  hourlyRate?: number;
+  isOnline?: boolean;
+  vehicleType?: 'own' | 'rented';
+}
 
-// 5. OWNER INFO SCHEMA
-const OwnerInfoSchema = new Schema({
-  vehicles: [{ type: Schema.Types.ObjectId, ref: "Vehicle" }],
-  kmRate: {
-    type: Map,
-    of: Number, // VehicleType -> Rate
-  },
-  canDriveSelf: { type: Boolean, default: false },
-  driverInfo: {
-    type: DriverInfoSchema,
-    required: function (this: any) {
-      return this.canDriveSelf;
-    },
-  },
-});
+// Interface for Vehicle
+export interface IVehicle {
+  vehicleId?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  color?: string;
+  plateNumber?: string;
+  vehicleType?: 'car' | 'bike' | 'auto' | 'bus' | 'truck';
+  seatingCapacity?: number;
+  rcDocument?: string;
+  insurance?: string;
+  vehicleImages?: string[];
+  perKmRate: number;
+  isAvailable?: boolean;
+}
 
-// 6. MAIN USER INTERFACE
+// Interface for Owner Information
+export interface IOwnerInfo {
+  vehicles?: IVehicle[];
+}
+
+// Interface for Public Information
+export interface IPublicInfo {
+  rating?: {
+    average?: number;
+    totalRatings?: number;
+  };
+  totalTrips?: number;
+  memberSince?: Date;
+}
+
+// Main User Interface
 export interface IUser extends Document {
   name: string;
   email: string;
   phone: string;
-  password: string;
-  age: number;
-  gender: "male" | "female" | "other";
+  password?: string;
   profileImage?: string;
-  address: {
-    homeLocation?: typeof AddressSchema;
-    currentLocation?: typeof AddressSchema;
-  };
-  emergencyContact?: { name: string; phone: string };
-  wallet: {
-    totalBalance: number;
-    addedBalance: number;
-    generatedBalance: number;
-  };
-  cancelList: (typeof CancelListItemSchema)[];
-  rideHistory: (mongoose.Types.ObjectId)[];
-  roles: "passenger" | "driver" | "owner";
-  passengerInfo?: {
-    approxRideDuration?: number;
-  };
-  driverInfo?: typeof DriverInfoSchema;
-  ownerInfo?: typeof OwnerInfoSchema;
-  createdAt: Date;
-  updatedAt: Date;
+  age: number;
+  gender: string;
+  permanentAddress?: IPermanentAddress;
+  currentLocation?: ICurrentLocation;
+  roles: Array<'passenger' | 'driver' | 'owner'>;
+  verification?: IVerification;
+  driverInfo?: IDriverInfo;
+  ownerInfo?: IOwnerInfo;
+  publicInfo?: IPublicInfo;
+  wallet?: IWallet;
+  isActive?: boolean;
+  lastLogin?: Date;
 }
 
-// 7. MAIN USER SCHEMA
-const UserSchema: Schema<IUser> = new Schema(
-  {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    phone: { type: String, required: true, unique: true, trim: true },
-    password: { type: String, required: true },
-    age: { type: Number, required: true, min: 18 },
-    gender: { type: String, enum: ["male", "female", "other"], required: true },
-    profileImage: String,
-    address: {
-      homeLocation: AddressSchema,
-      currentLocation: AddressSchema,
-    },
-    emergencyContact: {
-      name: String,
-      phone: String,
-    },
-    wallet: {
-      totalBalance: { type: Number, default: 0 },
-      addedBalance: { type: Number, default: 0 },
-      generatedBalance: { type: Number, default: 0 },
-    },
-    cancelList: [CancelListItemSchema],
-    rideHistory: [{ type: Schema.Types.ObjectId, ref: "Ride" }],
-    roles: {
-      type: String,
-      enum: ["passenger", "driver", "owner"],
-      required: true,
-    },
-    passengerInfo: {
-      approxRideDuration: Number,
-    },
-    driverInfo: {
-      type: DriverInfoSchema,
-      required: function (this: IUser) {
-        return this.roles === 'driver';
-      },
-    },
-    ownerInfo: {
-      type: OwnerInfoSchema,
-      required: function (this: IUser) {
-        return this.roles === 'owner';
-      },
-    },
+const permanentAddressSchema = new Schema<IPermanentAddress>({
+  addressLine1: { type: String, required: true },
+  addressLine2: String,
+  village: String,
+  tehsil: String,
+  district: { type: String, required: true },
+  state: { type: String, required: true },
+  pincode: { type: String, required: true }
+}, { _id: false });
+
+const currentLocationSchema = new Schema<ICurrentLocation>({
+  address: String,
+  coordinates: {
+    lat: Number,
+    lng: Number
   },
-  { timestamps: true }
-);
+  lastUpdated: { type: Date, default: Date.now }
+}, { _id: false });
 
-// 8. PRE-SAVE HOOKS
-UserSchema.pre<IUser>("save", function (next: HookNextFunction) {
-  // Validate driver age
-  if (this.roles === 'driver' && this.age < 21) {
-    return next(new Error("Driver must be at least 21 years old."));
+const verificationSchema = new Schema<IVerification>({
+  email: { type: Boolean, default: false },
+  phone: { type: Boolean, default: false },
+  kyc: { type: Boolean, default: false }
+}, { _id: false });
+
+const driverInfoSchema = new Schema<IDriverInfo>({
+  licenseNumber: String,
+  licenseImage: String,
+  idProof: String,
+  hourlyRate: { type: Number, default: 0 },
+  isOnline: { type: Boolean, default: false },
+  vehicleType: {
+    type: String,
+    enum: ['own', 'rented']
   }
+}, { _id: false });
 
-  // Ensure owner who can drive has driver info
-  if (this.roles === 'owner' && this.ownerInfo?.canDriveSelf && !this.ownerInfo.driverInfo) {
-    return next(new Error("Owner who can drive must provide driver information."));
-  }
-  next();
-});
+const vehicleSchema = new Schema<IVehicle>({
+  vehicleId: String,
+  make: String,
+  model: String,
+  year: Number,
+  color: String,
+  plateNumber: String,
+  vehicleType: {
+    type: String,
+    enum: ['car', 'bike', 'auto', 'bus', 'truck']
+  },
+  seatingCapacity: Number,
+  rcDocument: String,
+  insurance: String,
+  vehicleImages: [String],
+  perKmRate: { type: Number, required: true },
+  isAvailable: { type: Boolean, default: true }
+}, { _id: false });
 
-// 9. INDEXES
-UserSchema.index({ email: 1 });
-UserSchema.index({ phone: 1 });
-UserSchema.index({ "address.currentLocation.location": "2dsphere" });
-UserSchema.index({ "driverInfo.location": "2dsphere" });
+const ownerInfoSchema = new Schema<IOwnerInfo>({
+  vehicles: [vehicleSchema]
+}, { _id: false });
 
+const publicInfoSchema = new Schema<IPublicInfo>({
+  rating: {
+    average: { type: Number, default: 0 },
+    totalRatings: { type: Number, default: 0 }
+  },
+  totalTrips: { type: Number, default: 0 },
+  memberSince: { type: Date, default: Date.now }
+}, { _id: false });
 
-export default mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+const userSchema = new Schema<IUser>({
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true },
+  phone: { type: String, required: true, unique: true },
+  password: { type: String, required: true, select: false },
+  profileImage: { type: String, default: null },
+  age: { type: Number, required: true },
+  gender: { type: String, required: true },
+  permanentAddress: { type: permanentAddressSchema, required: false },
+  currentLocation: currentLocationSchema,
+  roles: [{ type: String, enum: ['passenger', 'driver', 'owner'], default: ['passenger'] }],
+  verification: verificationSchema,
+  driverInfo: driverInfoSchema,
+  ownerInfo: ownerInfoSchema,
+  publicInfo: publicInfoSchema,
+  wallet: walletSchema,
+  isActive: { type: Boolean, default: true },
+  lastLogin: Date,
+}, { timestamps: true });
+
+export const User = mongoose.models.User || mongoose.model<IUser>('User', userSchema);

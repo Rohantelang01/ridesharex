@@ -1,6 +1,6 @@
 // app/api/profile/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import User from '@/models/User';
+import { User } from '@/models/User';
 import connectToDB from '@/lib/db';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
   try {
     await connectToDB();
 
-    // ✅ Get token from cookies instead of Authorization header
     const decoded = await getTokenFromCookies();
 
     const user = await User.findById(decoded.userId)
@@ -43,7 +42,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Profile fetch error:', error);
-    if (error instanceof jwt.JsonWebTokenError || error?.message === 'No token found') {
+    if (error instanceof jwt.JsonWebTokenError || (error as Error).message === 'No token found') {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
     return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
@@ -55,7 +54,6 @@ export async function PUT(request: NextRequest) {
   try {
     await connectToDB();
     
-    // ✅ Get token from cookies instead of Authorization header
     const decoded = await getTokenFromCookies();
     
     const data = await request.json();
@@ -63,7 +61,9 @@ export async function PUT(request: NextRequest) {
     // Ensure sensitive data is not updated
     delete data.password;
     delete data.email;
-    delete data.roles;
+    
+    // Allow roles to be updated
+    // delete data.roles;
 
     const updatedUser = await User.findByIdAndUpdate(
       decoded.userId,
@@ -85,7 +85,7 @@ export async function PUT(request: NextRequest) {
 
   } catch (error) {
     console.error('Profile update error:', error);
-    if (error instanceof jwt.JsonWebTokenError || error?.message === 'No token found') {
+    if (error instanceof jwt.JsonWebTokenError || (error as Error).message === 'No token found') {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
     return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
@@ -97,7 +97,6 @@ export async function PATCH(request: NextRequest) {
     try {
       await connectToDB();
       
-      // ✅ Get token from cookies instead of Authorization header
       const decoded = await getTokenFromCookies();
       
       const { section, data } = await request.json();
@@ -110,17 +109,22 @@ export async function PATCH(request: NextRequest) {
 
       const update: { [key: string]: any } = {};
       
+      // If a section is specified (e.g., 'driverInfo'), create a nested update.
+      // This is used for updating existing sections of the profile.
       if (section) {
         Object.keys(data).forEach(key => {
           update[`${section}.${key}`] = data[key];
         });
       } else {
+        // If no section is specified, treat it as a root-level update.
+        // This is now used for adding a new role and its data simultaneously.
         Object.assign(update, data);
       }
 
       console.log('Update object:', update);
 
-      if (Object.keys(update).some(k => k.includes('password') || k.includes('email') || k.includes('roles'))) {
+      // Prevent accidental password or email updates via this endpoint.
+      if (Object.keys(update).some(k => k.includes('password') || k.includes('email'))) {
         return NextResponse.json({ error: 'Cannot update sensitive fields' }, { status: 400 });
       }
   
@@ -146,12 +150,12 @@ export async function PATCH(request: NextRequest) {
   
     } catch (error) {
       console.error('Profile patch error:', error);
-      if (error instanceof jwt.JsonWebTokenError || error?.message === 'No token found') {
+      if (error instanceof jwt.JsonWebTokenError || (error as Error).message === 'No token found') {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
       return NextResponse.json({ 
         error: 'Failed to update profile section',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: (error as Error).message
       }, { status: 500 });
     }
 }

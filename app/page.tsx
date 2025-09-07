@@ -1,228 +1,214 @@
 
-import HeroSection from '@/components/heroSection/HeroSection';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Clock, DollarSign, MapPin, Shield, Star, User, UserPlus, Car, Briefcase, Wallet } from "lucide-react";
 
-// --- SVG Icons (No external library needed) ---
-const ShieldCheckIcon = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008h-.008v-.008z" />
-  </svg>
+// 1. Hero Section
+const HeroSection = () => (
+  <section className="relative bg-blue-600 text-white py-20 md:py-32 animate-slide-up">
+    <div className="container mx-auto text-center px-4">
+      <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
+        Revolutionize Your Rides with Carbo: Ride-Share, Rent, or Own the Road
+      </h1>
+      <p className="mt-6 text-lg md:text-xl max-w-3xl mx-auto">
+        Our hybrid system benefits everyone. Passengers get flexible booking, drivers earn more, and owners maximize their vehicle's potential.
+      </p>
+      <div className="mt-10 flex flex-col sm:flex-row justify-center items-center gap-4">
+        <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+          Book a Ride
+        </Button>
+        <Button size="lg" variant="outline" className="text-white border-white hover:bg-blue-700">
+          Become a Driver/Owner
+        </Button>
+      </div>
+    </div>
+    <div className="absolute inset-0 bg-black opacity-10 z-0"></div>
+    {/* Google Maps API Placeholder */}
+    <div className="absolute bottom-0 w-full h-32 bg-gray-300/20 backdrop-blur-sm">
+        <p className="text-center text-white pt-4">Live tracking map placeholder</p>
+    </div>
+  </section>
 );
 
-const CurrencyDollarIcon = (props) => (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 11.21 12.77 11 12 11s-1.536.21-2.121.718c-1.171.879-1.171 2.303 0 3.182z" />
-    </svg>
+// 2. Features Section
+const FeaturesSection = () => (
+  <section className="py-20 bg-gray-50 dark:bg-gray-900">
+    <div className="container mx-auto px-4">
+      <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Why Carbo is Different</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {[
+          { icon: <Clock size={40} className="text-blue-500" />, title: "Easy Booking Types", description: "Choose from Advance (2-6h), Instant (2-3min), or Planned Trips to fit your schedule." },
+          { icon: <DollarSign size={40} className="text-green-500" />, title: "Flexible Earnings", description: "Drivers and owners earn competitive fares with our transparent hourly, per-km, and commission-based system." },
+          { icon: <Wallet size={40} className="text-yellow-500" />, title: "Secure Wallets", description: "Manage your earnings and payments with our secure Added and Generated Cash wallets." },
+          { icon: <MapPin size={40} className="text-red-500" />, title: "Live Tracking", description: "Track your ride in real-time for safety and convenience. Know exactly when your ride will arrive." },
+          { icon: <Star size={40} className="text-purple-500" />, title: "Ratings System", description: "Our two-way rating system ensures a high-quality experience for both passengers and drivers." },
+           { icon: <Shield size={40} className="text-indigo-500" />, title: "Verified & Secure", description: "All users undergo KYC verification for a trusted and secure ride-sharing environment." },
+        ].map((feature, index) => (
+          <Card key={index} className="text-center p-6 hover:shadow-lg transition-shadow">
+            <div className="flex justify-center mb-4">{feature.icon}</div>
+            <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+            <p className="text-gray-600 dark:text-gray-300">{feature.description}</p>
+          </Card>
+        ))}
+      </div>
+    </div>
+  </section>
 );
 
-const ClockIcon = (props) => (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
+// 3. User Roles Section
+const UserRolesSection = () => (
+  <section className="py-20 bg-white dark:bg-gray-800">
+    <div className="container mx-auto px-4">
+      <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Who is Carbo For?</h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <Card className="p-6">
+          <CardHeader className="flex items-center gap-4">
+            <User className="text-blue-500" size={32} />
+            <CardTitle>Passenger</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
+              <li>Book rides instantly or schedule in advance.</li>
+              <li>Track your driver in real-time.</li>
+              <li>Make secure payments through the app.</li>
+              <li>Rate your driver and trip experience.</li>
+            </ul>
+          </CardContent>
+        </Card>
+        <Card className="p-6">
+          <CardHeader className="flex items-center gap-4">
+            <Briefcase className="text-green-500" size={32} />
+            <CardTitle>Driver</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
+              <li>Accept ride requests that fit your schedule.</li>
+              <li>Earn from fares and get paid securely.</li>
+              <li>Use your own or a rented vehicle.</li>
+              <li>Rate passengers after each trip.</li>
+            </ul>
+          </CardContent>
+        </Card>
+        <Card className="p-6">
+          <CardHeader className="flex items-center gap-4">
+            <Car className="text-purple-500" size={32} />
+            <CardTitle>Vehicle Owner</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
+              <li>Rent your vehicle to drivers.</li>
+              <li>Create and manage planned trips.</li>
+              <li>Earn passive income from your asset.</li>
+              <li>Rate drivers using your vehicle.</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  </section>
 );
 
+// 4. How It Works Section
+const HowItWorksSection = () => (
+    <section className="py-20 bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">Simple Steps to Get Started</h2>
+        <div className="relative">
+          {/* Vertical Line */}
+          <div className="hidden md:block absolute top-0 bottom-0 left-1/2 w-0.5 bg-gray-300 dark:bg-gray-600"></div>
 
-// --- MOCK DATA ---
-const drivers = [
-  { name: "John D.", rating: 4.8, vehicle: "Toyota Camry", distance: "5 min away", avatar: "/placeholder-user.jpg" },
-  { name: "Jane S.", rating: 4.9, vehicle: "Honda Accord", distance: "8 min away", avatar: "/placeholder-user.jpg" },
-  { name: "Sam W.", rating: 4.7, vehicle: "Tesla Model 3", distance: "12 min away", avatar: "/placeholder-user.jpg" },
-  { name: "Maria G.", rating: 4.9, vehicle: "SUV XL", distance: "15 min away", avatar: "/placeholder-user.jpg" },
-];
-
-const vehicles = [
-  { type: "Car", owner: "Alice J.", available: true, img: "/car.png" },
-  { type: "Bike", owner: "Bob W.", available: false, img: "/bike.png" },
-  { type: "Truck", owner: "Charlie B.", available: true, img: "/truck.png" },
-  { type: "Bus", owner: "Diana A.", available: true, img: "/bus.png" },
-];
-
-const passengers = [
-  { name: "Emily D.", destination: "Airport", type: "Solo", avatar: "/placeholder-user.jpg" },
-  { name: "Michael C.", destination: "Downtown", type: "Pool", avatar: "/placeholder-user.jpg" },
-  { name: "Sarah M.", destination: "Midtown", type: "Solo", avatar: "/placeholder-user.jpg" },
-  { name: "David L.", destination: "Crosstown", type: "Pool", avatar: "/placeholder-user.jpg" },
-];
-
-const trips = [
-    { id: "TRIP001", route: "Downtown to Airport", status: "In Progress", user: "Emily D." },
-    { id: "TRIP002", route: "Midtown to Suburbs", status: "Completed", user: "Michael C." },
-    { id: "TRIP003", route: "Uptown to Crosstown", status: "Scheduled", user: "Sarah M." },
-    { id: "TRIP004", route: "Suburb to Downtown", status: "Completed", user: "David L." },
-];
-
-
-export default function Home() {
-  return (
-    <div className="bg-white dark:bg-gray-900">
-      <HeroSection />
-
-      {/* Why Choose CarGo? Section */}
-      <section className="py-16 sm:py-24">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-base font-semibold text-indigo-600 dark:text-indigo-400 tracking-wide uppercase">Why CarGo</h2>
-            <p className="mt-2 text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-              A Better Way to Ride
-            </p>
-            <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-500 dark:text-gray-400">
-              Experience the future of mobility with features designed for your safety, comfort, and convenience.
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="flex">
-              <div className="flex-shrink-0 h-12 w-12 rounded-md flex items-center justify-center bg-indigo-500 text-white">
-                <ShieldCheckIcon className="h-6 w-6" />
+          {/* Timeline Items */}
+          <div className="space-y-16">
+            {[
+              { step: 1, title: "Sign Up & Verify", description: "Create your account and complete a quick KYC verification to ensure safety for all users." },
+              { step: 2, title: "Book or List a Ride", description: "Passengers book a ride, while drivers and owners list their availability or vehicles." },
+              { step: 3, title: "Accept & Start the Trip", description: "Drivers accept a ride, pick up the passenger, and start the journey with live tracking." },
+              { step: 4, title: "Complete & Pay", description: "The trip ends, payment is processed securely, and both parties can rate each other." },
+            ].map((item, index) => (
+              <div key={item.step} className={`flex items-center ${index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"}`}>
+                <div className="md:w-1/2 p-4">
+                  <div className={`md:max-w-md ${index % 2 === 0 ? "md:ml-auto" : "md:mr-auto"}`}>
+                    <div className="text-blue-500 font-bold">Step {item.step}</div>
+                    <h3 className="text-2xl font-semibold mt-2">{item.title}</h3>
+                    <p className="text-gray-600 dark:text-gray-300 mt-4">{item.description}</p>
+                  </div>
+                </div>
+                <div className="hidden md:flex w-12 h-12 bg-blue-500 text-white rounded-full items-center justify-center font-bold text-xl absolute left-1/2 -translate-x-1/2">
+                  {item.step}
+                </div>
+                {/* Spacer for mobile */}
+                <div className="md:w-1/2 p-4"></div>
               </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Safety First</h3>
-                <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-                  With live tracking, driver verification, and 24/7 support, your safety is our priority.
-                </p>
-              </div>
-            </div>
-            <div className="flex">
-              <div className="flex-shrink-0 h-12 w-12 rounded-md flex items-center justify-center bg-indigo-500 text-white">
-                 <CurrencyDollarIcon className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Affordable Rides</h3>
-                <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-                  Transparent pricing and a variety of ride options to fit your budget. No hidden fees.
-                </p>
-              </div>
-            </div>
-            <div className="flex">
-              <div className="flex-shrink-0 h-12 w-12 rounded-md flex items-center justify-center bg-indigo-500 text-white">
-                <ClockIcon className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Earn on Your Terms</h3>
-                <p className="mt-2 text-base text-gray-500 dark:text-gray-400">
-                  Drive with CarGo and turn your car into an earning machine. Flexible hours, instant payouts.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
-      </section>
+      </div>
+    </section>
+  );
 
-      {/* Explore Section with Tabs */}
-      <section className="py-16 sm:py-24 bg-gray-50 dark:bg-slate-800">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-center mb-12 text-gray-900 dark:text-white">Explore What's Happening</h2>
-              <Tabs defaultValue="drivers" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
-                      <TabsTrigger value="drivers">Nearby Drivers</TabsTrigger>
-                      <TabsTrigger value="passengers">Nearby Passengers</TabsTrigger>
-                      <TabsTrigger value="vehicles">Nearby Vehicles</TabsTrigger>
-                      <TabsTrigger value="trips">Active Trips</TabsTrigger>
-                  </TabsList>
 
-                  <TabsContent value="drivers" className="mt-8">
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {drivers.map((driver) => (
-                        <Card key={driver.name} className="overflow-hidden transform hover:-translate-y-1 transition-transform duration-300">
-                           <CardHeader className="flex flex-row items-center gap-4 p-4">
-                              <Avatar>
-                                <AvatarImage src={driver.avatar} alt={driver.name} />
-                                <AvatarFallback>{driver.name.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <CardTitle>{driver.name}</CardTitle>
-                                <CardDescription>{driver.vehicle}</CardDescription>
-                              </div>
-                           </CardHeader>
-                           <CardContent className="p-4 pt-0">
-                                <p className="text-sm text-gray-600 dark:text-gray-300">★ {driver.rating} | {driver.distance}</p>
-                           </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="passengers" className="mt-8">
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {passengers.map((p) => (
-                        <Card key={p.name} className="overflow-hidden transform hover:-translate-y-1 transition-transform duration-300">
-                           <CardHeader className="flex flex-row items-center gap-4 p-4">
-                              <Avatar>
-                                <AvatarImage src={p.avatar} alt={p.name} />
-                                <AvatarFallback>{p.name.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <CardTitle>{p.name}</CardTitle>
-                                <CardDescription>Destination: {p.destination}</CardDescription>
-                              </div>
-                           </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                                <p className="text-sm text-gray-600 dark:text-gray-300">Trip Type: {p.type}</p>
-                           </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="vehicles" className="mt-8">
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {vehicles.map((v) => (
-                        <Card key={v.type} className="flex flex-col justify-between transform hover:-translate-y-1 transition-transform duration-300">
-                           <CardHeader>
-                               <CardTitle>{v.type}</CardTitle>
-                               <CardDescription>Owner: {v.owner}</CardDescription>
-                           </CardHeader>
-                           <CardContent>
-                               <span className={`text-sm font-medium px-2 py-1 rounded-full ${v.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                {v.available ? "Available" : "Unavailable"}
-                               </span>
-                           </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="trips" className="mt-8">
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {trips.map((trip) => (
-                        <Card key={trip.id} className="transform hover:-translate-y-1 transition-transform duration-300">
-                           <CardHeader>
-                               <CardTitle className="text-base">{trip.route}</CardTitle>
-                               <CardDescription>{trip.id} | {trip.user}</CardDescription>
-                           </CardHeader>
-                           <CardContent>
-                               <span className={`text-sm font-medium px-2 py-1 rounded-full ${trip.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : trip.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                {trip.status}
-                               </span>
-                           </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </TabsContent>
-              </Tabs>
-          </div>
-      </section>
-
-       {/* Call to Action Section (Become a Driver) */}
-       <section className="bg-gradient-to-r from-purple-600 to-indigo-600">
-            <div className="container mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 lg:px-8 lg:py-24">
-                <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
-                    <span className="block">Ready to start earning?</span>
-                    <span className="block">Join CarGo as a driver today.</span>
-                </h2>
-                <p className="mt-4 max-w-lg mx-auto text-lg text-indigo-100">
-                    Enjoy flexible hours, competitive earnings, and be your own boss. It's easy to get started.
-                </p>
-                <div className="mt-8 flex justify-center">
-                    <Button size="lg" className="bg-white text-indigo-600 font-semibold hover:bg-gray-100">
-                        Sign Up to Drive
-                    </Button>
-                </div>
-            </div>
-        </section>
+// 5. Pricing Section
+const PricingSection = () => (
+  <section className="py-20 bg-white dark:bg-gray-800">
+    <div className="container mx-auto px-4">
+      <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Transparent Pricing</h2>
+      <p className="text-center text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-12">
+        Our fares are calculated based on a combination of time and distance, plus a small service commission. Here are a few examples of how earnings are distributed.
+      </p>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[250px]">Scenario</TableHead>
+              <TableHead>Passenger Pays</TableHead>
+              <TableHead>Driver Earns</TableHead>
+              <TableHead>Owner Earns</TableHead>
+              <TableHead className="text-right">Carbo Commission</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell className="font-medium">Driver owns their vehicle</TableCell>
+              <TableCell>₹500</TableCell>
+              <TableCell>₹450</TableCell>
+              <TableCell>N/A</TableCell>
+              <TableCell className="text-right">₹50 (10%)</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium">Driver rents from an owner</TableCell>
+              <TableCell>₹500</TableCell>
+              <TableCell>₹300</TableCell>
+              <TableCell>₹150</TableCell>
+              <TableCell className="text-right">₹50 (10%)</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium">Owner drives their own vehicle</TableCell>
+              <TableCell>₹500</TableCell>
+              <TableCell>₹450</TableCell>
+               <TableCell>N/A (as driver)</TableCell>
+              <TableCell className="text-right">₹50 (10%)</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </Card>
+      <p className="text-center text-sm text-gray-500 mt-4">
+        *Cancellation fee of ₹15 may apply as per platform policy.
+      </p>
     </div>
+  </section>
+);
+
+
+export default function LandingPage() {
+  return (
+    <main>
+      <HeroSection />
+      <FeaturesSection />
+      <UserRolesSection />
+      <HowItWorksSection />
+      <PricingSection />
+    </main>
   );
 }

@@ -1,3 +1,4 @@
+
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -12,52 +13,26 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
+import { IUser } from "@/types/profile";
 
-// Schema aligned with your User model
+// Schema aligned with your new IUser model
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   age: z.coerce.number().min(18, { message: "You must be at least 18 years old." }),
-  gender: z.enum(["male", "female", "other"]),
   profileImage: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal("")),
-  // Home Address
-  homeLocationStreet: z.string().optional(),
-  homeLocationCity: z.string().optional(),
-  homeLocationState: z.string().optional(),
-  homeLocationPincode: z.string().regex(/^\d{6}$/, { message: "Pincode must be 6 digits." }).optional().or(z.literal("")),
-  homeLocationCountry: z.string().default("India"),
-  homeLocationLat: z.coerce.number().min(-90).max(90).optional().or(z.literal("")),
-  homeLocationLng: z.coerce.number().min(-180).max(180).optional().or(z.literal("")),
-  // Emergency Contact
-  emergencyContactName: z.string().optional(),
-  emergencyContactPhone: z.string().regex(/^[6-9]\d{9}$/, { message: "Please enter a valid Indian phone number." }).optional().or(z.literal("")),
+  // Permanent Address
+  addressLine1: z.string().min(5, { message: "Address line 1 is required." }),
+  addressLine2: z.string().optional(),
+  village: z.string().optional(),
+  tehsil: z.string().optional(),
+  district: z.string().min(2, { message: "District is required." }),
+  state: z.string().min(2, { message: "State is required." }),
+  pincode: z.string().regex(/^\d{6}$/, { message: "Pincode must be 6 digits." }),
 });
 
 interface PersonalInformationFormProps {
-  data?: {
-    name?: string;
-    age?: number;
-    gender?: 'male' | 'female' | 'other';
-    profileImage?: string;
-    emergencyContact?: {
-      name?: string;
-      phone?: string;
-    };
-    address?: {
-      homeLocation?: {
-        street?: string;
-        city?: string;
-        state?: string;
-        pincode?: string;
-        country?: string;
-        location?: {
-          lat: number;
-          lng: number;
-        };
-      };
-    };
-  };
+  data?: IUser;
   onSave: (data: any) => Promise<{ success: boolean; error?: string }>;
   isLoading: boolean;
 }
@@ -70,17 +45,14 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
     defaultValues: {
       name: "",
       age: 18,
-      gender: "male",
       profileImage: "",
-      homeLocationStreet: "",
-      homeLocationCity: "",
-      homeLocationState: "",
-      homeLocationPincode: "",
-      homeLocationCountry: "India",
-      homeLocationLat: "",
-      homeLocationLng: "",
-      emergencyContactName: "",
-      emergencyContactPhone: "",
+      addressLine1: "",
+      addressLine2: "",
+      village: "",
+      tehsil: "",
+      district: "",
+      state: "",
+      pincode: "",
     },
   });
 
@@ -90,17 +62,14 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
       form.reset({
         name: data.name || "",
         age: data.age || 18,
-        gender: data.gender || "male",
         profileImage: data.profileImage || "",
-        homeLocationStreet: data.address?.homeLocation?.street || "",
-        homeLocationCity: data.address?.homeLocation?.city || "",
-        homeLocationState: data.address?.homeLocation?.state || "",
-        homeLocationPincode: data.address?.homeLocation?.pincode || "",
-        homeLocationCountry: data.address?.homeLocation?.country || "India",
-        homeLocationLat: data.address?.homeLocation?.location?.lat?.toString() || "",
-        homeLocationLng: data.address?.homeLocation?.location?.lng?.toString() || "",
-        emergencyContactName: data.emergencyContact?.name || "",
-        emergencyContactPhone: data.emergencyContact?.phone || "",
+        addressLine1: data.permanentAddress?.addressLine1 || "",
+        addressLine2: data.permanentAddress?.addressLine2 || "",
+        village: data.permanentAddress?.village || "",
+        tehsil: data.permanentAddress?.tehsil || "",
+        district: data.permanentAddress?.district || "",
+        state: data.permanentAddress?.state || "",
+        pincode: data.permanentAddress?.pincode || "",
       });
     }
   }, [data, form]);
@@ -113,24 +82,15 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
       const personalData = {
         name: values.name,
         age: values.age,
-        gender: values.gender,
         profileImage: values.profileImage || undefined,
-        emergencyContact: (values.emergencyContactName || values.emergencyContactPhone) ? {
-          name: values.emergencyContactName,
-          phone: values.emergencyContactPhone,
-        } : undefined,
-        address: {
-          homeLocation: (values.homeLocationStreet || values.homeLocationCity || values.homeLocationState || values.homeLocationPincode) ? {
-            street: values.homeLocationStreet,
-            city: values.homeLocationCity,
-            state: values.homeLocationState,
-            pincode: values.homeLocationPincode,
-            country: values.homeLocationCountry,
-            location: (values.homeLocationLat && values.homeLocationLng) ? {
-              lat: parseFloat(values.homeLocationLat) || 0,
-              lng: parseFloat(values.homeLocationLng) || 0,
-            } : { lat: 0, lng: 0 } // Default coordinates if not provided
-          } : undefined
+        permanentAddress: {
+          addressLine1: values.addressLine1,
+          addressLine2: values.addressLine2,
+          village: values.village,
+          tehsil: values.tehsil,
+          district: values.district,
+          state: values.state,
+          pincode: values.pincode,
         }
       };
 
@@ -138,10 +98,8 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
       
       if (result.success) {
         console.log("Personal information updated successfully");
-        // You can show a success toast here
       } else {
         console.error("Failed to update personal information:", result.error);
-        // You can show an error toast here
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -182,31 +140,9 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
           />
           <FormField
             control={form.control}
-            name="gender"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Gender *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your gender" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
             name="profileImage"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="md:col-span-2">
                 <FormLabel>Profile Image URL</FormLabel>
                 <FormControl>
                   <Input placeholder="https://example.com/image.png" {...field} />
@@ -218,16 +154,16 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Home Address</h3>
+          <h3 className="text-lg font-medium">Permanent Address</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="homeLocationStreet"
+              name="addressLine1"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Street</FormLabel>
+                <FormItem className="md:col-span-2">
+                  <FormLabel>Address Line 1 *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Street Address" {...field} />
+                    <Input placeholder="House No, Street Name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -235,12 +171,38 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             />
             <FormField
               control={form.control}
-              name="homeLocationCity"
+              name="addressLine2"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>Address Line 2</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Apartment, suite, etc. (optional)" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="village"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>City</FormLabel>
+                  <FormLabel>Village/Town</FormLabel>
                   <FormControl>
-                    <Input placeholder="City" {...field} />
+                    <Input placeholder="Village or Town" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="tehsil"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tehsil</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Tehsil" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -248,10 +210,23 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             />
             <FormField
               control={form.control}
-              name="homeLocationState"
+              name="district"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>State</FormLabel>
+                  <FormLabel>District *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="District" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="state"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>State *</FormLabel>
                   <FormControl>
                     <Input placeholder="State" {...field} />
                   </FormControl>
@@ -261,70 +236,12 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             />
             <FormField
               control={form.control}
-              name="homeLocationPincode"
+              name="pincode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Pincode</FormLabel>
+                  <FormLabel>Pincode *</FormLabel>
                   <FormControl>
                     <Input placeholder="6-digit Pincode" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="homeLocationLat"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Latitude</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="any" placeholder="Latitude" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="homeLocationLng"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Longitude</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="any" placeholder="Longitude" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Emergency Contact</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="emergencyContactName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Emergency Contact Name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="emergencyContactPhone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Emergency Contact Phone" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

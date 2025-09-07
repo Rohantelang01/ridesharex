@@ -1,7 +1,7 @@
 
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,17 +13,28 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
+import { IWallet } from "@/types/profile";
+
+const bankDetailsSchema = z.object({
+    accountNumber: z.string().min(1, "Account number is required"),
+    bankName: z.string().min(1, "Bank name is required"),
+    ifscCode: z.string().min(1, "IFSC code is required"),
+});
+
+const paymentMethodSchema = z.object({
+  type: z.enum(['upi', 'bank']),
+  upiId: z.string().optional(),
+  bankDetails: bankDetailsSchema.optional(),
+});
 
 const formSchema = z.object({
-  upiId: z.string().optional(),
-  bankName: z.string().optional(),
-  accountNumber: z.string().optional(),
-  ifscCode: z.string().optional(),
+  paymentMethods: z.array(paymentMethodSchema),
 });
 
 interface PaymentsFormProps {
-  data?: any;
+  data?: IWallet;
   onSave: (data: any) => Promise<{ success: boolean; error?: string }>;
   isLoading: boolean;
 }
@@ -34,37 +45,29 @@ const PaymentsForm = ({ data, onSave, isLoading }: PaymentsFormProps) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      upiId: "",
-      bankName: "",
-      accountNumber: "",
-      ifscCode: "",
+      paymentMethods: [],
     },
   });
 
-  // Populate form with existing data
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "paymentMethods",
+  });
+
   useEffect(() => {
-    if (data) {
-      form.reset({
-        upiId: data.upiId || "",
-        bankName: data.bankName || "",
-        accountNumber: data.accountNumber || "",
-        ifscCode: data.ifscCode || "",
-      });
+    if (data?.paymentMethods) {
+      form.reset({ paymentMethods: data.paymentMethods });
     }
   }, [data, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    
     try {
-      const result = await onSave(values);
-      
+      const result = await onSave({ paymentMethods: values.paymentMethods });
       if (result.success) {
-        console.log("Payment information updated successfully");
-        // You can show a success toast here
+        console.log("Payment methods updated successfully");
       } else {
-        console.error("Failed to update payment information:", result.error);
-        // You can show an error toast here
+        console.error("Failed to update payment methods:", result.error);
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -76,71 +79,91 @@ const PaymentsForm = ({ data, onSave, isLoading }: PaymentsFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="upiId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>UPI ID</FormLabel>
-              <FormControl>
-                <Input placeholder="yourname@upi" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Bank Account Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {fields.map((field, index) => (
+          <div key={field.id} className="border-t pt-6 space-y-4">
             <FormField
               control={form.control}
-              name="bankName"
+              name={`paymentMethods.${index}.type`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bank Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., State Bank of India" {...field} />
-                  </FormControl>
+                  <FormLabel>Payment Method Type</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="upi">UPI</SelectItem>
+                      <SelectItem value="bank">Bank Account</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="accountNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Account Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Your Account Number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="ifscCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>IFSC Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Your IFSC Code" {...field} />
-                  </FormControl>
-                  <FormMessage /> 
-                </FormItem>
-              )}
-            />
+
+            {form.watch(`paymentMethods.${index}.type`) === 'upi' && (
+              <FormField
+                control={form.control}
+                name={`paymentMethods.${index}.upiId`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>UPI ID</FormLabel>
+                    <FormControl><Input placeholder="yourname@upi" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {form.watch(`paymentMethods.${index}.type`) === 'bank' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name={`paymentMethods.${index}.bankDetails.bankName`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bank Name</FormLabel>
+                      <FormControl><Input placeholder="e.g., State Bank of India" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`paymentMethods.${index}.bankDetails.accountNumber`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Account Number</FormLabel>
+                      <FormControl><Input placeholder="Your Account Number" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`paymentMethods.${index}.bankDetails.ifscCode`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>IFSC Code</FormLabel>
+                      <FormControl><Input placeholder="Your IFSC Code" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            <Button type="button" variant="destructive" onClick={() => remove(index)}>Remove Method</Button>
           </div>
-        </div>
-        
+        ))}
+
+        <Button
+          type="button"
+          onClick={() => append({ type: 'upi', upiId: '' })}
+        >
+          Add Payment Method
+        </Button>
+
         <div className="flex gap-4">
-          <Button 
-            type="submit" 
-            disabled={isSubmitting || isLoading}
-            className="flex-1"
-          >
+          <Button type="submit" disabled={isSubmitting || isLoading} className="flex-1">
             {isSubmitting || isLoading ? "Saving..." : "Save Payment Information"}
           </Button>
         </div>

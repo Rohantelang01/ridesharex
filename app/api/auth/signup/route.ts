@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import User from "@/models/User";
+import { User } from "@/models/User";
 import connectToDB from "@/lib/db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       password: hashedPassword,
       age,
       gender,
-      roles: "passenger",
+      roles: ["passenger"],
     });
 
     await newUser.save();

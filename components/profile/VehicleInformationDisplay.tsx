@@ -1,17 +1,18 @@
+
 "use client";
 import { Button } from "@/components/ui/button";
-import { Edit, Car, DollarSign, CheckCircle, XCircle } from "lucide-react";
-import { UserProfile } from "@/types/profile";
+import { Edit, Car, DollarSign, Palette, Calendar, Users, FileText } from "lucide-react";
+import { IUser } from "@/types/profile";
 
 interface VehicleInformationDisplayProps {
-  profile: UserProfile;
+  profile: IUser;
   onEdit: () => void;
 }
 
 const VehicleInformationDisplay = ({ profile, onEdit }: VehicleInformationDisplayProps) => {
   const ownerInfo = profile.ownerInfo;
 
-  if (!ownerInfo) {
+  if (!ownerInfo || !ownerInfo.vehicles || ownerInfo.vehicles.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-500">No vehicle information available</p>
@@ -34,98 +35,86 @@ const VehicleInformationDisplay = ({ profile, onEdit }: VehicleInformationDispla
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Vehicle Details */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <Car className="w-5 h-5 text-gray-500" />
-            <div>
-              <p className="text-sm text-gray-500">Can Drive Self</p>
-              <p className="font-medium">
-                {ownerInfo.canDriveSelf ? (
-                  <span className="flex items-center text-green-600">
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    Yes
-                  </span>
-                ) : (
-                  <span className="flex items-center text-red-600">
-                    <XCircle className="w-4 h-4 mr-1" />
-                    No
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <Car className="w-5 h-5 text-gray-500" />
-            <div>
-              <p className="text-sm text-gray-500">Number of Vehicles</p>
-              <p className="font-medium">
-                {ownerInfo.vehicles ? ownerInfo.vehicles.length : 0} vehicles
-              </p>
-            </div>
-          </div>
-
-          {ownerInfo.vehicles && ownerInfo.vehicles.length > 0 && (
-            <div className="flex items-center space-x-3">
-              <Car className="w-5 h-5 text-gray-500" />
-              <div>
-                <p className="text-sm text-gray-500">Vehicle IDs</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {ownerInfo.vehicles.map((vehicleId, index) => (
-                    <span key={index} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-xs">
-                      {vehicleId.toString().slice(-8)}
-                    </span>
-                  ))}
+      {ownerInfo.vehicles.map((vehicle, index) => (
+        <div key={index} className="border-t pt-6">
+          <h4 className="font-medium text-gray-900 dark:text-white mb-4">
+            Vehicle {index + 1}: {vehicle.make} {vehicle.model}
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Vehicle Details */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <Car className="w-5 h-5 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Plate Number</p>
+                  <p className="font-medium">{vehicle.plateNumber || "Not provided"}</p>
+                </div>
+              </div>
+               <div className="flex items-center space-x-3">
+                <Car className="w-5 h-5 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Type</p>
+                  <p className="font-medium">{vehicle.vehicleType || "Not provided"}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Palette className="w-5 h-5 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Color</p>
+                  <p className="font-medium">{vehicle.color || "Not provided"}</p>
                 </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Rate Information */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-gray-900 dark:text-white">Rate Information</h4>
-          {ownerInfo.kmRate && Object.keys(ownerInfo.kmRate).length > 0 ? (
-            <div className="space-y-2">
-              {Object.entries(ownerInfo.kmRate).map(([vehicleType, rate]) => (
-                <div key={vehicleType} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                    {vehicleType}
-                  </span>
-                  <span className="font-medium">₹{rate}/km</span>
+            {/* More Vehicle Details */}
+            <div className="space-y-4">
+               <div className="flex items-center space-x-3">
+                <Calendar className="w-5 h-5 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Year</p>
+                  <p className="font-medium">{vehicle.year || "Not provided"}</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500">No rate information available</p>
-          )}
-        </div>
-      </div>
-
-      {/* Driver Information (if owner can drive) */}
-      {ownerInfo.canDriveSelf && ownerInfo.driverInfo && (
-        <div className="space-y-4">
-          <h4 className="font-medium text-gray-900 dark:text-white">Driver Information</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-3">
-              <Car className="w-5 h-5 text-gray-500" />
-              <div>
-                <p className="text-sm text-gray-500">License Number</p>
-                <p className="font-medium">{ownerInfo.driverInfo.licenseNumber || "Not provided"}</p>
               </div>
+              <div className="flex items-center space-x-3">
+                <Users className="w-5 h-5 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Seating Capacity</p>
+                  <p className="font-medium">{vehicle.seatingCapacity || "Not provided"} seats</p>
+                </div>
+              </div>
+                <div className="flex items-center space-x-3">
+                    <DollarSign className="w-5 h-5 text-gray-500" />
+                    <div>
+                    <p className="text-sm text-gray-500">Rate per KM</p>
+                    <p className="font-medium">₹{vehicle.perKmRate}/km</p>
+                    </div>
+                </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <DollarSign className="w-5 h-5 text-gray-500" />
-              <div>
-                <p className="text-sm text-gray-500">Hourly Rate</p>
-                <p className="font-medium">₹{ownerInfo.driverInfo.hourlyRate || 0}/hr</p>
+
+            {/* Documents */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <FileText className="w-5 h-5 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">RC Document</p>
+                  <p className="font-medium">
+                    {vehicle.rcDocument ? "Uploaded" : "Not uploaded"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <FileText className="w-5 h-5 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Insurance</p>
+                  <p className="font-medium">
+                    {vehicle.insurance ? "Uploaded" : "Not uploaded"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 };

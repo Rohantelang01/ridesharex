@@ -1,10 +1,11 @@
+
 "use client";
 import { Button } from "@/components/ui/button";
 import { Edit, User, MapPin, Phone, Calendar, Image as ImageIcon } from "lucide-react";
-import { UserProfile } from "@/types/profile";
+import { IUser } from "@/types/profile";
 
 interface PersonalInformationDisplayProps {
-  profile: UserProfile;
+  profile: IUser;
   onEdit: () => void;
 }
 
@@ -46,14 +47,6 @@ const PersonalInformationDisplay = ({ profile, onEdit }: PersonalInformationDisp
           </div>
 
           <div className="flex items-center space-x-3">
-            <User className="w-5 h-5 text-gray-500" />
-            <div>
-              <p className="text-sm text-gray-500">Gender</p>
-              <p className="font-medium capitalize">{profile.gender || "Not provided"}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
             <ImageIcon className="w-5 h-5 text-gray-500" />
             <div>
               <p className="text-sm text-gray-500">Profile Image</p>
@@ -66,34 +59,30 @@ const PersonalInformationDisplay = ({ profile, onEdit }: PersonalInformationDisp
 
         {/* Address Information */}
         <div className="space-y-4">
-          <h4 className="font-medium text-gray-900 dark:text-white">Home Address</h4>
-          {profile.address?.homeLocation ? (
+          <h4 className="font-medium text-gray-900 dark:text-white">Permanent Address</h4>
+          {profile.permanentAddress ? (
             <div className="space-y-2">
               <div className="flex items-center space-x-3">
                 <MapPin className="w-5 h-5 text-gray-500" />
                 <div>
-                  <p className="text-sm text-gray-500">Street</p>
-                  <p className="font-medium">{profile.address.homeLocation.street || "Not provided"}</p>
+                  <p className="text-sm text-gray-500">Address Line 1</p>
+                  <p className="font-medium">{profile.permanentAddress.addressLine1 || "Not provided"}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <p className="text-sm text-gray-500">City</p>
-                  <p className="font-medium">{profile.address.homeLocation.city || "Not provided"}</p>
+                  <p className="text-sm text-gray-500">District</p>
+                  <p className="font-medium">{profile.permanentAddress.district || "Not provided"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">State</p>
-                  <p className="font-medium">{profile.address.homeLocation.state || "Not provided"}</p>
+                  <p className="font-medium">{profile.permanentAddress.state || "Not provided"}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="text-sm text-gray-500">Pincode</p>
-                  <p className="font-medium">{profile.address.homeLocation.pincode || "Not provided"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Country</p>
-                  <p className="font-medium">{profile.address.homeLocation.country || "India"}</p>
+                  <p className="font-medium">{profile.permanentAddress.pincode || "Not provided"}</p>
                 </div>
               </div>
             </div>
@@ -101,31 +90,6 @@ const PersonalInformationDisplay = ({ profile, onEdit }: PersonalInformationDisp
             <p className="text-gray-500">No address information provided</p>
           )}
         </div>
-      </div>
-
-      {/* Emergency Contact */}
-      <div className="space-y-4">
-        <h4 className="font-medium text-gray-900 dark:text-white">Emergency Contact</h4>
-        {profile.emergencyContact ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex items-center space-x-3">
-              <User className="w-5 h-5 text-gray-500" />
-              <div>
-                <p className="text-sm text-gray-500">Name</p>
-                <p className="font-medium">{profile.emergencyContact.name || "Not provided"}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Phone className="w-5 h-5 text-gray-500" />
-              <div>
-                <p className="text-sm text-gray-500">Phone</p>
-                <p className="font-medium">{profile.emergencyContact.phone || "Not provided"}</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-gray-500">No emergency contact information provided</p>
-        )}
       </div>
     </div>
   );
