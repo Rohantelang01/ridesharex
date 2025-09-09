@@ -4,7 +4,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Info, Phone, Car, MapPin } from 'lucide-react';
+import { Home, Info, Phone, Car } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavLink {
@@ -15,7 +15,7 @@ interface NavLink {
 
 const navLinks: NavLink[] = [
   { name: 'Home', href: '/', icon: Home },
-  { name: 'Find Rides', href: '/rides', icon: Car },
+  { name: 'Find a Ride', href: '/find-ride', icon: Car },
   { name: 'About', href: '/about', icon: Info },
   { name: 'Contact', href: '/contact', icon: Phone },
 ];

@@ -106,6 +106,182 @@ const VehicleInformationForm = ({ data, onSave, isLoading, canDriveSelf: initial
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="border-t pt-6">
+          <h3 className="text-xl font-semibold mb-4">Your Vehicle(s)</h3>
+          {fields.map((field, index) => (
+            <div key={field.id} className="border-t pt-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.make`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Make</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Toyota" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.model`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Model</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Camry" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.year`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Year</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 2023" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.color`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Color</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Blue" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.plateNumber`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plate Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., ABC-1234" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.vehicleType`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vehicle Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a vehicle type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="car">Car</SelectItem>
+                          <SelectItem value="bike">Bike</SelectItem>
+                          <SelectItem value="auto">Auto Rickshaw</SelectItem>
+                          <SelectItem value="bus">Bus</SelectItem>
+                          <SelectItem value="truck">Truck</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.seatingCapacity`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Seating Capacity</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 4" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.perKmRate`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rate per Km</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 10" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.rcDocument`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>RC Document URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com/rc.pdf" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.insurance`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Insurance URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://example.com/insurance.pdf" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`vehicles.${index}.isAvailable`}
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 col-span-1 md:col-span-2 lg:col-span-3">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Is this vehicle available?</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <Button type="button" variant="destructive" onClick={() => remove(index)}>Remove Vehicle</Button>
+            </div>
+          ))}
+          
+          <Button
+            type="button"
+            onClick={() => append({ make: "", model: "", year: new Date().getFullYear(), color: "", plateNumber: "", vehicleType: "car", seatingCapacity: 4, perKmRate: 10, isAvailable: true })}
+          >
+            Add Another Vehicle
+          </Button>
+        </div>
+
         <FormField
           control={form.control}
           name="canDriveSelf"
@@ -141,25 +317,6 @@ const VehicleInformationForm = ({ data, onSave, isLoading, canDriveSelf: initial
             />
           </div>
         )}
-
-        <div className="border-t pt-6">
-          <h3 className="text-xl font-semibold mb-4">Your Vehicle(s)</h3>
-          {fields.map((field, index) => (
-            <div key={field.id} className="border-t pt-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* ... (rest of the vehicle fields) ... */}
-              </div>
-              <Button type="button" variant="destructive" onClick={() => remove(index)}>Remove Vehicle</Button>
-            </div>
-          ))}
-          
-          <Button
-            type="button"
-            onClick={() => append({ make: "", model: "", year: new Date().getFullYear(), color: "", plateNumber: "", vehicleType: "car", seatingCapacity: 4, perKmRate: 10, isAvailable: true })}
-          >
-            Add Another Vehicle
-          </Button>
-        </div>
 
         <div className="flex gap-4">
           <Button type="submit" disabled={isSubmitting || isLoading} className="flex-1">

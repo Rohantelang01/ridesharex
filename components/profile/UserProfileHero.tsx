@@ -26,7 +26,7 @@ import {
 interface UserProfileHeroProps {
   profile: UserProfile;
   activeRole: string;
-  userRole: (string | string[])[]; // Allow for nested arrays
+  userRole: (string | string[])[]; 
   onRoleChange: (newRole: string) => void;
   onAddRole?: (role: 'driver' | 'owner') => void;
   isEditing?: boolean;
@@ -42,8 +42,12 @@ const UserProfileHero = ({
   const [isEditing, setIsEditing] = useState(false);
   const [selectedNewRole, setSelectedNewRole] = useState<string>('');
 
-  // Ensure 'passenger' is always present and flatten the roles array
-  const flatUserRoles = Array.from(new Set(['passenger', ...userRole.flat()]));
+  
+  const flattenRoles = (roles: (string | any)[]): string[] => {
+    return roles.flat(Infinity) as string[];
+  };
+
+  const flatUserRoles = Array.from(new Set(['passenger', ...flattenRoles(userRole)]));
 
   const getRoleIcon = (role: string) => {
     switch (role) {
