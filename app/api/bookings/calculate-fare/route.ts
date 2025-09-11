@@ -3,8 +3,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 import { IWallet, walletSchema } from './Wallet';
 import { IVehicle } from './Vehicle'; // Import the new Vehicle interface
 
-// Interface for Address
-export interface IAddress {
+// Interface for Permanent Address
+export interface IPermanentAddress {
   addressLine1: string;
   addressLine2?: string;
   village?: string;
@@ -12,10 +12,20 @@ export interface IAddress {
   district: string;
   state: string;
   pincode: string;
-  coordinates?: {
+  coordinates: {
     lat: number;
     lng: number;
   };
+}
+
+// Interface for Current Location
+export interface ICurrentLocation {
+  address?: string;
+  coordinates: {
+    type: 'Point';
+    coordinates: [number, number]; // [longitude, latitude]
+  };
+  lastUpdated?: Date;
 }
 
 // Interface for Verification
@@ -60,7 +70,8 @@ export interface IUser extends Document {
   profileImage?: string;
   age: number;
   gender: string;
-  permanentAddress?: IAddress;
+  permanentAddress?: IPermanentAddress;
+  currentLocation?: ICurrentLocation;
   roles: Array<'passenger' | 'driver' | 'owner'>;
   verification?: IVerification;
   driverInfo?: IDriverInfo;
@@ -71,7 +82,7 @@ export interface IUser extends Document {
   lastLogin?: Date;
 }
 
-const addressSchema = new Schema<IAddress>({
+const permanentAddressSchema = new Schema<IPermanentAddress>({
   addressLine1: { type: String, required: true },
   addressLine2: String,
   village: String,
@@ -80,11 +91,21 @@ const addressSchema = new Schema<IAddress>({
   state: { type: String, required: true },
   pincode: { type: String, required: true },
   coordinates: {
-      lat: { type: Number },
-      lng: { type: Number },
+      lat: { type: Number, required: true },
+      lng: { type: Number, required: true },
   }
 }, { _id: false });
 
+const currentLocationSchema = new Schema<ICurrentLocation>({
+  address: String,
+  coordinates: {
+    type: { type: String, enum: ['Point'], default: 'Point', required: true },
+    coordinates: { type: [Number], required: true } // [longitude, latitude]
+  },
+  lastUpdated: { type: Date, default: Date.now }
+}, { _id: false });
+
+currentLocationSchema.index({ coordinates: '2dsphere' });
 
 const verificationSchema = new Schema<IVerification>({
   email: { type: Boolean, default: false },
@@ -130,7 +151,8 @@ const userSchema = new Schema<IUser>({
   profileImage: { type: String, default: null },
   age: { type: Number, required: true },
   gender: { type: String, required: true },
-  permanentAddress: { type: addressSchema, required: false },
+  permanentAddress: { type: permanentAddressSchema, required: false },
+  currentLocation: currentLocationSchema,
   roles: [{ type: String, enum: ['passenger', 'driver', 'owner'], default: ['passenger'] }],
   verification: verificationSchema,
   driverInfo: driverInfoSchema,

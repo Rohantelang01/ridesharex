@@ -13,22 +13,35 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { IUser } from "@/types/profile";
+import dynamic from 'next/dynamic';
+
+// Dynamically import the Map component with SSR turned off
+const Map = dynamic(() => import('../common/Map'), {
+  ssr: false,
+  loading: () => <p>Loading map...</p>,
+});
 
 // Schema aligned with your new IUser model
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   age: z.coerce.number().min(18, { message: "You must be at least 18 years old." }),
+  gender: z.string().min(1, {message: "Gender is required"}),
   profileImage: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal("")),
-  // Permanent Address
-  addressLine1: z.string().min(5, { message: "Address line 1 is required." }),
-  addressLine2: z.string().optional(),
-  village: z.string().optional(),
-  tehsil: z.string().optional(),
-  district: z.string().min(2, { message: "District is required." }),
-  state: z.string().min(2, { message: "State is required." }),
-  pincode: z.string().regex(/^\d{6}$/, { message: "Pincode must be 6 digits." }),
+  permanentAddress: z.object({
+    addressLine1: z.string().min(5, { message: "Address line 1 is required." }),
+    addressLine2: z.string().optional(),
+    village: z.string().optional(),
+    tehsil: z.string().optional(),
+    district: z.string().min(2, { message: "District is required." }),
+    state: z.string().min(2, { message: "State is required." }),
+    pincode: z.string().regex(/^\d{6}$/, { message: "Pincode must be 6 digits." }),
+    coordinates: z.object({
+      lat: z.number(),
+      lng: z.number(),
+    }).optional()
+  }),
 });
 
 interface PersonalInformationFormProps {
@@ -39,63 +52,68 @@ interface PersonalInformationFormProps {
 
 const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformationFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       age: 18,
+      gender: "",
       profileImage: "",
-      addressLine1: "",
-      addressLine2: "",
-      village: "",
-      tehsil: "",
-      district: "",
-      state: "",
-      pincode: "",
+      permanentAddress: {
+        addressLine1: "",
+        addressLine2: "",
+        village: "",
+        tehsil: "",
+        district: "",
+        state: "",
+        pincode: "",
+      },
     },
   });
 
-  // Populate form with existing data
   useEffect(() => {
     if (data) {
       form.reset({
         name: data.name || "",
         age: data.age || 18,
+        gender: data.gender || "",
         profileImage: data.profileImage || "",
-        addressLine1: data.permanentAddress?.addressLine1 || "",
-        addressLine2: data.permanentAddress?.addressLine2 || "",
-        village: data.permanentAddress?.village || "",
-        tehsil: data.permanentAddress?.tehsil || "",
-        district: data.permanentAddress?.district || "",
-        state: data.permanentAddress?.state || "",
-        pincode: data.permanentAddress?.pincode || "",
+        permanentAddress: data.permanentAddress || {},
       });
+
+      const initialPos = data.permanentAddress?.coordinates;
+      if (initialPos && initialPos.lat && initialPos.lng) {
+        setMapPosition([initialPos.lat, initialPos.lng]);
+      } else {
+        setMapPosition([21.1458, 79.0882]); // Default to Nagpur, India
+      }
     }
   }, [data, form]);
 
+  const handleLocationSelect = async (lat: number, lng: number) => {
+    setMapPosition([lat, lng]);
+    form.setValue("permanentAddress.coordinates", { lat, lng });
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const addressData = await response.json();
+      const { address } = addressData;
+      form.setValue("permanentAddress.addressLine1", address.road || "");
+      form.setValue("permanentAddress.village", address.village || "");
+      form.setValue("permanentAddress.tehsil", address.county || "");
+      form.setValue("permanentAddress.district", address.state_district || "");
+      form.setValue("permanentAddress.state", address.state || "");
+      form.setValue("permanentAddress.pincode", address.postcode || "");
+    } catch (error) {
+      console.error("Error fetching address:", error);
+    }
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    
     try {
-      // Transform form data to match your model structure
-      const personalData = {
-        name: values.name,
-        age: values.age,
-        profileImage: values.profileImage || undefined,
-        permanentAddress: {
-          addressLine1: values.addressLine1,
-          addressLine2: values.addressLine2,
-          village: values.village,
-          tehsil: values.tehsil,
-          district: values.district,
-          state: values.state,
-          pincode: values.pincode,
-        }
-      };
-
-      const result = await onSave(personalData);
-      
+      const result = await onSave(values);
       if (result.success) {
         console.log("Personal information updated successfully");
       } else {
@@ -110,7 +128,7 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -140,6 +158,19 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
           />
           <FormField
             control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Gender *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Your Gender" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="profileImage"
             render={({ field }) => (
               <FormItem className="md:col-span-2">
@@ -155,10 +186,13 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Permanent Address</h3>
+          <div className="relative">
+            {mapPosition && <Map onLocationSelect={handleLocationSelect} position={mapPosition} />}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
+          <FormField
               control={form.control}
-              name="addressLine1"
+              name="permanentAddress.addressLine1"
               render={({ field }) => (
                 <FormItem className="md:col-span-2">
                   <FormLabel>Address Line 1 *</FormLabel>
@@ -171,7 +205,7 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             />
             <FormField
               control={form.control}
-              name="addressLine2"
+              name="permanentAddress.addressLine2"
               render={({ field }) => (
                 <FormItem className="md:col-span-2">
                   <FormLabel>Address Line 2</FormLabel>
@@ -184,7 +218,7 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             />
              <FormField
               control={form.control}
-              name="village"
+              name="permanentAddress.village"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Village/Town</FormLabel>
@@ -197,7 +231,7 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             />
              <FormField
               control={form.control}
-              name="tehsil"
+              name="permanentAddress.tehsil"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tehsil</FormLabel>
@@ -210,7 +244,7 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             />
             <FormField
               control={form.control}
-              name="district"
+              name="permanentAddress.district"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>District *</FormLabel>
@@ -223,7 +257,7 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             />
             <FormField
               control={form.control}
-              name="state"
+              name="permanentAddress.state"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>State *</FormLabel>
@@ -236,7 +270,7 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             />
             <FormField
               control={form.control}
-              name="pincode"
+              name="permanentAddress.pincode"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Pincode *</FormLabel>
@@ -249,7 +283,6 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
             />
           </div>
         </div>
-
         <div className="flex gap-4">
           <Button 
             type="submit" 

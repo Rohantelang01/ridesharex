@@ -1,11 +1,12 @@
 
 "use client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Clock, DollarSign, MapPin, Shield, Star, User, UserPlus, Car, Briefcase, Wallet } from "lucide-react";
+import { Clock, DollarSign, MapPin, Shield, Star, User, Car, Briefcase, Wallet } from "lucide-react";
+import Map from "@/components/common/Map";
 
-// 1. Hero Section
+// 1. Hero Section (Placeholder Removed)
 const HeroSection = () => (
   <section className="relative bg-blue-600 text-white py-20 md:py-32 animate-slide-up">
     <div className="container mx-auto text-center px-4">
@@ -25,16 +26,25 @@ const HeroSection = () => (
       </div>
     </div>
     <div className="absolute inset-0 bg-black opacity-10 z-0"></div>
-    {/* Google Maps API Placeholder */}
-    <div className="absolute bottom-0 w-full h-32 bg-gray-300/20 backdrop-blur-sm">
-        <p className="text-center text-white pt-4">Live tracking map placeholder</p>
-    </div>
   </section>
 );
 
-// 2. Features Section
+// 2. Interactive Map Section
+const InteractiveMapSection = () => (
+    <section className="py-20 bg-gray-50 dark:bg-gray-900">
+        <div className="container mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Find Your Ride Now</h2>
+            <div className="max-w-5xl mx-auto rounded-lg overflow-hidden shadow-2xl">
+                 <Map />
+            </div>
+        </div>
+    </section>
+);
+
+
+// 3. Features Section
 const FeaturesSection = () => (
-  <section className="py-20 bg-gray-50 dark:bg-gray-900">
+  <section className="py-20 bg-white dark:bg-gray-800">
     <div className="container mx-auto px-4">
       <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Why Carbo is Different</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -57,7 +67,7 @@ const FeaturesSection = () => (
   </section>
 );
 
-// 3. User Roles Section
+// 4. User Roles Section
 const UserRolesSection = () => (
   <section className="py-20 bg-white dark:bg-gray-800">
     <div className="container mx-auto px-4">
@@ -110,7 +120,7 @@ const UserRolesSection = () => (
   </section>
 );
 
-// 4. How It Works Section
+// 5. How It Works Section
 const HowItWorksSection = () => (
     <section className="py-20 bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4">
@@ -149,7 +159,7 @@ const HowItWorksSection = () => (
   );
 
 
-// 5. Pricing Section
+// 6. Pricing Section
 const PricingSection = () => (
   <section className="py-20 bg-white dark:bg-gray-800">
     <div className="container mx-auto px-4">
@@ -205,6 +215,7 @@ export default function LandingPage() {
   return (
     <main>
       <HeroSection />
+      <InteractiveMapSection />
       <FeaturesSection />
       <UserRolesSection />
       <HowItWorksSection />

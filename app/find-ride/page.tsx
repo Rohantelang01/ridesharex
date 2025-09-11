@@ -1,7 +1,7 @@
 
 import FindRideHeader from "@/components/find-ride/Header";
 import QuickLocation from "@/components/find-ride/QuickLocation";
-import Map from "@/components/find-ride/Map";
+import Map from "@/components/common/Map";
 import AvailableDrivers from "@/components/find-ride/AvailableDrivers";
 import Booking from "@/components/find-ride/Booking";
 import Filters from "@/components/find-ride/Filters";
