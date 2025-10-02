@@ -13,17 +13,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { IUser } from "@/types/profile";
 import dynamic from 'next/dynamic';
 
-// Dynamically import the Map component with SSR turned off
 const Map = dynamic(() => import('../common/Map'), {
   ssr: false,
   loading: () => <p>Loading map...</p>,
 });
 
-// Schema aligned with your new IUser model
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   age: z.coerce.number().min(18, { message: "You must be at least 18 years old." }),
@@ -45,52 +43,45 @@ const formSchema = z.object({
 });
 
 interface PersonalInformationFormProps {
-  data?: IUser;
-  onSave: (data: any) => Promise<{ success: boolean; error?: string }>;
-  isLoading: boolean;
+  profile: IUser;
+  onSave: (data: any) => void;
+  onCancel: () => void;
 }
 
-const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformationFormProps) => {
+const PersonalInformationForm = ({ profile, onSave, onCancel }: PersonalInformationFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      age: 18,
-      gender: "",
-      profileImage: "",
+      name: profile?.name || "",
+      age: profile?.age || 18,
+      gender: profile?.gender || "",
+      profileImage: profile?.profileImage || "",
       permanentAddress: {
-        addressLine1: "",
-        addressLine2: "",
-        village: "",
-        tehsil: "",
-        district: "",
-        state: "",
-        pincode: "",
+        addressLine1: profile?.permanentAddress?.addressLine1 || "",
+        addressLine2: profile?.permanentAddress?.addressLine2 || "",
+        village: profile?.permanentAddress?.village || "",
+        tehsil: profile?.permanentAddress?.tehsil || "",
+        district: profile?.permanentAddress?.district || "",
+        state: profile?.permanentAddress?.state || "",
+        pincode: profile?.permanentAddress?.pincode || "",
+        coordinates: profile?.permanentAddress?.coordinates || { lat: 0, lng: 0 },
       },
     },
   });
 
   useEffect(() => {
-    if (data) {
-      form.reset({
-        name: data.name || "",
-        age: data.age || 18,
-        gender: data.gender || "",
-        profileImage: data.profileImage || "",
-        permanentAddress: data.permanentAddress || {},
-      });
-
-      const initialPos = data.permanentAddress?.coordinates;
-      if (initialPos && initialPos.lat && initialPos.lng) {
+    if (profile) {
+      const initialPos = profile.permanentAddress?.coordinates;
+      if (initialPos?.lat && initialPos?.lng) {
         setMapPosition([initialPos.lat, initialPos.lng]);
       } else {
-        setMapPosition([21.1458, 79.0882]); // Default to Nagpur, India
+        setMapPosition([21.1458, 79.0882]); // Default to Nagpur
       }
     }
-  }, [data, form]);
+  }, [profile]);
 
   const handleLocationSelect = async (lat: number, lng: number) => {
     setMapPosition([lat, lng]);
@@ -113,12 +104,7 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      const result = await onSave(values);
-      if (result.success) {
-        console.log("Personal information updated successfully");
-      } else {
-        console.error("Failed to update personal information:", result.error);
-      }
+      await onSave(values);
     } catch (error) {
       console.error("Error submitting form:", error);
     } finally {
@@ -130,167 +116,28 @@ const PersonalInformationForm = ({ data, onSave, isLoading }: PersonalInformatio
     <Form {...form}>
        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Your Name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="age"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Age *</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="Your Age" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="gender"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Gender *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Your Gender" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="profileImage"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Profile Image URL</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://example.com/image.png" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Name *</FormLabel><FormControl><Input placeholder="Your Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="age" render={({ field }) => (<FormItem><FormLabel>Age *</FormLabel><FormControl><Input type="number" placeholder="Your Age" {...field} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="gender" render={({ field }) => (<FormItem><FormLabel>Gender *</FormLabel><FormControl><Input placeholder="Your Gender" {...field} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="profileImage" render={({ field }) => (<FormItem className="md:col-span-2"><FormLabel>Profile Image URL</FormLabel><FormControl><Input placeholder="https://example.com/image.png" {...field} /></FormControl><FormMessage /></FormItem>)} />
         </div>
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Permanent Address</h3>
-          <div className="relative">
-            {mapPosition && <Map onLocationSelect={handleLocationSelect} position={mapPosition} />}
-          </div>
+          <div className="relative h-64 md:h-80 w-full">{mapPosition && <Map onLocationSelect={handleLocationSelect} position={mapPosition} />}</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-              control={form.control}
-              name="permanentAddress.addressLine1"
-              render={({ field }) => (
-                <FormItem className="md:col-span-2">
-                  <FormLabel>Address Line 1 *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="House No, Street Name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="permanentAddress.addressLine2"
-              render={({ field }) => (
-                <FormItem className="md:col-span-2">
-                  <FormLabel>Address Line 2</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Apartment, suite, etc. (optional)" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="permanentAddress.village"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Village/Town</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Village or Town" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="permanentAddress.tehsil"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tehsil</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Tehsil" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="permanentAddress.district"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>District *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="District" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="permanentAddress.state"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>State *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="State" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="permanentAddress.pincode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Pincode *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="6-digit Pincode" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormField control={form.control} name="permanentAddress.addressLine1" render={({ field }) => (<FormItem className="md:col-span-2"><FormLabel>Address Line 1 *</FormLabel><FormControl><Input placeholder="House No, Street Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="permanentAddress.addressLine2" render={({ field }) => (<FormItem className="md:col-span-2"><FormLabel>Address Line 2</FormLabel><FormControl><Input placeholder="Apartment, suite, etc. (optional)" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="permanentAddress.village" render={({ field }) => (<FormItem><FormLabel>Village/Town</FormLabel><FormControl><Input placeholder="Village or Town" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="permanentAddress.tehsil" render={({ field }) => (<FormItem><FormLabel>Tehsil</FormLabel><FormControl><Input placeholder="Tehsil" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="permanentAddress.district" render={({ field }) => (<FormItem><FormLabel>District *</FormLabel><FormControl><Input placeholder="District" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="permanentAddress.state" render={({ field }) => (<FormItem><FormLabel>State *</FormLabel><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="permanentAddress.pincode" render={({ field }) => (<FormItem><FormLabel>Pincode *</FormLabel><FormControl><Input placeholder="6-digit Pincode" {...field} /></FormControl><FormMessage /></FormItem>)} />
           </div>
         </div>
         <div className="flex gap-4">
-          <Button 
-            type="submit" 
-            disabled={isSubmitting || isLoading}
-            className="flex-1"
-          >
-            {isSubmitting || isLoading ? "Saving..." : "Save Personal Information"}
-          </Button>
+          <Button type="submit" disabled={isSubmitting} className="flex-1">{isSubmitting ? "Saving..." : "Save Personal Information"}</Button>
+          <Button type="button" variant="outline" onClick={onCancel} className="flex-1">Cancel</Button>
         </div>
       </form>
     </Form>

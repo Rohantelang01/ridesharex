@@ -1,25 +1,48 @@
-
 "use client";
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-geosearch/dist/geosearch.css';
-import { LatLngExpression, icon } from 'leaflet';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+import L, { LatLngExpression } from 'leaflet';
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
+import 'leaflet-routing-machine';
 
-interface MapProps {
-  onLocationSelect: (lat: number, lng: number) => void;
-  position: LatLngExpression;
-}
+// Correctly handle default Leaflet icon with bundlers like Next.js
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
+import iconUrl from 'leaflet/dist/images/marker-icon.png';
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
-const SearchField = ({ onLocationSelect }) => {
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: iconRetinaUrl.src,
+  iconUrl: iconUrl.src,
+  shadowUrl: shadowUrl.src,
+});
+
+// --- UTILITY COMPONENTS ---
+
+// This utility is crucial for maps in dynamic containers. It tells the map 
+// to re-calculate its size after the container has finished rendering,
+// preventing the map from initializing with a zero height.
+const InvalidateSize = () => {
   const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 100); // A small delay is often necessary
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+};
 
+// --- FEATURE COMPONENTS ---
+
+const SearchField = ({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number) => void }) => {
+  const map = useMap();
   useEffect(() => {
     const provider = new OpenStreetMapProvider();
-
     const searchControl = new GeoSearchControl({
-      provider: provider,
+      provider,
       style: 'bar',
       showMarker: true,
       showPopup: false,
@@ -28,99 +51,91 @@ const SearchField = ({ onLocationSelect }) => {
       animateZoom: true,
       keepResult: true,
     });
-
     map.addControl(searchControl);
-
-    map.on('geosearch/showlocation', function (result) {
-      onLocationSelect(result.location.y, result.location.x);
-    });
-
+    const onResult = (result: any) => onLocationSelect(result.location.y, result.location.x);
+    map.on('geosearch/showlocation', onResult);
     return () => {
+      map.off('geosearch/showlocation', onResult);
       map.removeControl(searchControl);
     };
   }, [map, onLocationSelect]);
+  return null;
+};
+
+const Routing = ({ start, end }: { start: LatLngExpression, end: LatLngExpression }) => {
+  const map = useMap();
+  const routingControlRef = useRef<L.Routing.Control | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+    if (routingControlRef.current) {
+      map.removeControl(routingControlRef.current);
+    }
+    routingControlRef.current = L.Routing.control({
+      waypoints: [L.latLng(start), L.latLng(end)],
+      routeWhileDragging: false,
+      show: false, // Hide the default routing panel
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: true,
+    }).addTo(map);
+
+    return () => {
+      if (routingControlRef.current) {
+        map.removeControl(routingControlRef.current);
+      }
+    };
+  }, [map, start, end]);
 
   return null;
 };
 
-const GoToCurrentLocationButton = ({ onLocationSelect }) => {
-  const map = useMap();
+// --- MAIN MAP COMPONENT ---
 
-  const handleGoToCurrentLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            map.flyTo([latitude, longitude], 13);
-            onLocationSelect(latitude, longitude);
-          },
-          (error) => {
-            console.error("Error getting current location:", error);
-            alert("Could not retrieve your location. Please ensure you have location services enabled and have granted permission.");
-          }
-        );
-      } else {
-        alert("Geolocation is not supported by this browser.");
-      }
-    };
+const defaultPosition: LatLngExpression = [21.1458, 79.0882]; // Default to Nagpur, India
+const defaultOnLocationSelect = () => {};
 
-  return (
-      <button
-        onClick={handleGoToCurrentLocation}
-        className="absolute top-14 right-2 z-10 bg-white text-black p-2 rounded shadow"
-        style={{ zIndex: 1000, top: '52px', right: '12px', border: '2px solid rgba(0,0,0,0.2)', borderRadius: '4px' }}
-        type="button"
-        title="Go to my current location"
-      >
-        📍
-      </button>
-  )
+interface MapProps {
+  onLocationSelect?: (lat: number, lng: number) => void;
+  position?: LatLngExpression | null;
+  start?: LatLngExpression | null;
+  end?: LatLngExpression | null;
 }
 
-const Map = ({ onLocationSelect, position }: MapProps) => {
-  const markerRef = useRef(null);
-  const [markerPosition, setMarkerPosition] = useState(position);
-
-  const eventHandlers = useMemo(
-    () => ({
-      dragend() {
-        const marker = markerRef.current;
-        if (marker != null) {
-          const { lat, lng } = marker.getLatLng();
-          onLocationSelect(lat, lng);
-          setMarkerPosition([lat, lng]);
-        }
-      },
-    }),
-    [onLocationSelect],
-  );
-
-  const customIcon = icon({
-    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-  });
-
-  useEffect(() => {
-    setMarkerPosition(position);
-  }, [position]);
+const Map = ({ onLocationSelect = defaultOnLocationSelect, position, start, end }: MapProps) => {
+  const markerRef = useRef<L.Marker | null>(null);
+  const centerPosition = position || defaultPosition;
 
   return (
-    <MapContainer center={position || [21.1458, 79.0882]} zoom={13} style={{ height: '400px', width: '100%' }}>
+    <MapContainer center={centerPosition} zoom={13} style={{ height: '100%', width: '100%' }}>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
+      
+      {/* Features */}
       <SearchField onLocationSelect={onLocationSelect} />
-      <GoToCurrentLocationButton onLocationSelect={onLocationSelect} />
-      <Marker
-        draggable={true}
-        eventHandlers={eventHandlers}
-        position={markerPosition}
-        ref={markerRef}
-        icon={customIcon}
-      >
-      </Marker>
+      {start && end ? (
+        <Routing start={start} end={end} />
+      ) : (
+        <Marker
+          draggable={true}
+          eventHandlers={{
+            dragend() {
+              const marker = markerRef.current;
+              if (marker) {
+                const { lat, lng } = marker.getLatLng();
+                onLocationSelect(lat, lng);
+              }
+            },
+          }}
+          position={centerPosition} // Marker starts at the center position
+          ref={markerRef}
+        />
+      )}
+
+      {/* This is the critical piece to ensure the map renders correctly */}
+      <InvalidateSize />
     </MapContainer>
   );
 };

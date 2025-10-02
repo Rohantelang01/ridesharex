@@ -1,11 +1,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
-import User from '@/models/User';
+import dbConnect from '@/lib/db';
+import { User } from '@/models/User';
 
 export async function PUT(req: NextRequest) {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     const { driverId, coordinates } = await req.json();
 
@@ -15,12 +15,20 @@ export async function PUT(req: NextRequest) {
 
     const user = await User.findById(driverId);
 
-    if (!user || user.role !== 'driver') {
+    if (!user || !user.roles.includes('driver')) {
       return NextResponse.json({ message: 'Driver not found' }, { status: 404 });
     }
 
-    user.driverInfo.currentLocation.coordinates = coordinates;
-    await user.save();
+    if (user.driverInfo) {
+        if (!user.driverInfo.currentLocation) {
+            user.driverInfo.currentLocation = { coordinates: { type: 'Point', coordinates: [0,0]}};
+        }
+        user.driverInfo.currentLocation.coordinates.coordinates = [coordinates.lng, coordinates.lat];
+        await user.save();
+    } else {
+        return NextResponse.json({ message: 'Driver info not found' }, { status: 404 });
+    }
+
 
     return NextResponse.json({ message: 'Location updated successfully', user }, { status: 200 });
   } catch (error) {

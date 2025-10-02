@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -50,12 +51,13 @@ export default function AvailableDrivers() {
         const fetchDrivers = async () => {
             try {
                 const response = await fetch('/api/drivers');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch drivers');
-                }
-                const data: IUser[] = await response.json();
+                const data = await response.json();
 
-                const formattedDrivers = data.map(user => {
+                if (!response.ok) {
+                    throw new Error(data.details || 'Failed to fetch drivers');
+                }
+
+                const formattedDrivers = data.map((user: IUser) => {
                     const vehicle = user.ownerInfo?.vehicles?.[0];
                     return {
                         id: user._id,

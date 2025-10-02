@@ -1,13 +1,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
+import dbConnect from '@/lib/db';
 import { Booking } from '@/models/Booking';
-import User from '@/models/User';
+import { User } from '@/models/User';
 import mongoose from 'mongoose';
 
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     const {
       passengerId,
@@ -35,11 +35,11 @@ export async function POST(req: NextRequest) {
     const passenger = await User.findById(passengerId);
     const driver = await User.findById(driverId);
 
-    if (!passenger || passenger.role !== 'passenger') {
-      return NextResponse.json({ message: 'Passenger not found' }, { status: 404 });
+    if (!passenger || !passenger.roles.includes('passenger')) {
+      return NextResponse.json({ message: 'Passenger not found or is not a passenger' }, { status: 404 });
     }
-    if (!driver || driver.role !== 'driver') {
-      return NextResponse.json({ message: 'Driver not found' }, { status: 404 });
+    if (!driver || !driver.roles.includes('driver')) {
+      return NextResponse.json({ message: 'Driver not found or is not a driver' }, { status: 404 });
     }
 
     // --- Data Transformation & Booking Creation ---
@@ -93,8 +93,10 @@ export async function POST(req: NextRequest) {
     
     // Update driver's status for instant bookings
     if (bookingType === 'instant') {
-        driver.driverInfo.status = 'ON_TRIP';
-        await driver.save();
+        if(driver.driverInfo){
+            driver.driverInfo.status = 'ON_TRIP';
+            await driver.save();
+        }
     }
 
     return NextResponse.json({ message: 'Booking created successfully', booking: newBooking }, { status: 201 });

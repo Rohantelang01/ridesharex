@@ -1,9 +1,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
+import dbConnect from '@/lib/db';
 import { User } from '@/models/User';
 import { Vehicle } from '@/models/Vehicle'; 
-import { getToken } from 'next-auth/jwt';
 
 const MAPPLS_API_KEY = process.env.MAPPLS_API_KEY;
 
@@ -38,7 +37,7 @@ async function getDistanceMatrix(start: string, destination: string, resource: s
 
 export async function POST(req: NextRequest) {
     try {
-        await connectToDatabase();
+        await dbConnect();
 
         const { bookingType, pickup, dropoff, driverId } = await req.json();
 

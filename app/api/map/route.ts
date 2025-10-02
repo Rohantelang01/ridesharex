@@ -1,75 +1,33 @@
-// app/api/map/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+// OpenStreetMap Nominatim API Endpoint
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const query = searchParams.get('query');
+
+  if (!query) {
+    return NextResponse.json({ error: 'Query parameter is required' }, { status: 400 });
+  }
+
   try {
-    const { action, query } = await request.json();
-    const apiKey = process.env.MAPPLS_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Mappls API key not configured on the server.' 
-      }, { status: 500 });
-    }
-
-    let mapplsUrl = '';
-    
-    // Mappls API endpoints
-    if (action === 'autocomplete') {
-      mapplsUrl = `https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(query)}&region=ind`;
-    } else if (action === 'search') {
-      mapplsUrl = `https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(query)}&region=ind`;
-    } else if (action === 'geocode') {
-      mapplsUrl = `https://atlas.mappls.com/api/places/geocode/json?address=${encodeURIComponent(query)}&region=ind`;
-    } else {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid API action.' 
-      }, { status: 400 });
-    }
-
-    const options = {
-      method: 'GET',
+    // Using the public Nominatim API - a custom User-Agent is required.
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1`, {
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    };
-
-    console.log('Making request to:', mapplsUrl);
+        'User-Agent': 'RideShareX/1.0 (a student project)',
+      },
+    });
     
-    const response = await fetch(mapplsUrl, options);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Mappls API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: mapplsUrl,
-        errorText
-      });
-      
-      return NextResponse.json({ 
-        success: false, 
-        error: `Mappls API Error: ${response.status} - ${response.statusText}`,
-        details: errorText
-      }, { status: response.status });
+      console.error('OpenStreetMap API Error:', errorText);
+      return NextResponse.json({ error: 'Failed to fetch from OpenStreetMap API' }, { status: response.status });
     }
 
     const data = await response.json();
-    console.log('Mappls API Response:', data);
-    
-    return NextResponse.json({ 
-      success: true, 
-      data 
-    });
+    return NextResponse.json(data, { status: 200 });
 
-  } catch (error: any) {
-    console.error('Map API Error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: `Network error: ${error.message}` 
-    }, { status: 500 });
+  } catch (error) {
+    console.error('OpenStreetMap API request failed:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,212 +1,64 @@
 
-// components/profile/UserProfileHero.tsx
 "use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { User, Camera, Shield, Briefcase, Plus, Car, Building } from 'lucide-react';
-import { UserProfile } from '@/types/profile';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { IUser } from "@/models/User";
+import { AtSign, User, Shield, Briefcase, Car } from "lucide-react";
 
 interface UserProfileHeroProps {
-  profile: UserProfile;
-  activeRole: string;
-  userRole: (string | string[])[]; 
-  onRoleChange: (newRole: string) => void;
-  onAddRole?: (role: 'driver' | 'owner') => void;
-  isEditing?: boolean;
+  profile: IUser;
 }
 
-const UserProfileHero = ({ 
-  profile, 
-  activeRole,
-  userRole,
-  onRoleChange,
-  onAddRole 
-}: UserProfileHeroProps) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [selectedNewRole, setSelectedNewRole] = useState<string>('');
-
-  
-  const flattenRoles = (roles: (string | any)[]): string[] => {
-    return roles.flat(Infinity) as string[];
-  };
-
-  const flatUserRoles = Array.from(new Set(['passenger', ...flattenRoles(userRole)]));
+const UserProfileHero = ({ profile }: UserProfileHeroProps) => {
 
   const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'passenger': return <User className="w-4 h-4 mr-2" />;
-      case 'driver': return <Car className="w-4 h-4 mr-2" />;
-      case 'owner': return <Building className="w-4 h-4 mr-2" />;
-      case 'admin': return <Shield className="w-4 h-4 mr-2" />;
-      default: return null;
+    switch (role.toLowerCase()) {
+      case 'driver':
+        return <Car className="w-4 h-4 mr-1.5" />;
+      case 'owner':
+        return <Briefcase className="w-4 h-4 mr-1.5" />;
+      default:
+        return <User className="w-4 h-4 mr-1.5" />;
     }
   }
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'driver': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'owner': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'passenger': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
-  }
-
-  const getRoleDescription = (role: string) => {
-    switch (role) {
-      case 'driver': return 'Drive vehicles and earn money by providing rides';
-      case 'owner': return 'Own vehicles and manage them, can also drive if needed';
-      case 'passenger': return 'Book rides and travel to your destination';
-      default: return '';
-    }
-  }
-
-  const getProfileImage = () => {
-    return profile.profileImage || '/placeholder-user.jpg';
-  };
-
-  const handleAddRole = () => {
-    if (selectedNewRole && onAddRole) {
-      onAddRole(selectedNewRole as 'driver' | 'owner');
-      setSelectedNewRole('');
-    }
-  };
-
-  const availableRoles = ['driver', 'owner'].filter(role => !flatUserRoles.includes(role));
-  
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-8">
-      <div className="flex flex-col md:flex-row items-center">
-        <div className="relative mb-4 md:mb-0 md:mr-6">
-          <Image
-            src={getProfileImage()}
-            alt="Profile"
-            width={128}
-            height={128}
-            className="rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
-          />
-          <Button
-            size="icon"
-            variant="outline"
-            className="absolute bottom-2 right-2 bg-white dark:bg-gray-800 rounded-full"
-          >
-            <Camera className="w-5 h-5" />
-          </Button>
-        </div>
+    <div className="bg-gradient-to-br from-gray-900 to-slate-800 text-white rounded-xl shadow-2xl p-6 md:p-8 mb-8 overflow-hidden relative">
+        {/* Decorative background elements */}
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_left,_rgba(107,114,128,0.1),_transparent_30%)]"></div>
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_bottom_right,_rgba(107,114,128,0.1),_transparent_30%)]"></div>
         
-        <div className="text-center md:text-left flex-1">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{profile.name}</h1>
-          <p className="text-md text-gray-500 dark:text-gray-400">{profile.email}</p>
+      <div className="flex flex-col md:flex-row items-center md:items-start text-center md:text-left z-10 relative">
+        <div className="relative mb-4 md:mb-0 md:mr-8">
+          <img 
+            src={profile.profileImage || `https://ui-avatars.com/api/?name=${profile.name.replace(/\s/g, "+")}&background=random&color=fff`}
+            alt="Profile Image" 
+            className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-slate-700/50 shadow-lg object-cover"
+          />
+        </div>
+        <div className="flex-grow">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{profile.name}</h1>
           
-          <div className="flex items-center justify-center md:justify-start mt-4 space-x-2">
-            {flatUserRoles.map((role) => (
-              <span
-                key={role}
-                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(role)}`}
-              >
-                {getRoleIcon(role)} {role.charAt(0).toUpperCase() + role.slice(1)}
-              </span>
-            ))}
-            
-            {availableRoles.length > 0 && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="ml-2">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Role
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Role</DialogTitle>
-                    <DialogDescription>Choose a role to expand your capabilities.</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-3">
-                      {availableRoles.map((role) => (
-                        <div
-                          key={role}
-                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                            selectedNewRole === role
-                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                          }`}
-                          onClick={() => setSelectedNewRole(role)}
-                        >
-                          <div className="flex items-center space-x-3">
-                            {getRoleIcon(role)}
-                            <div className="flex-1">
-                              <h3 className="font-medium text-gray-900 dark:text-white capitalize">
-                                {role}
-                              </h3>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {getRoleDescription(role)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {selectedNewRole && (
-                      <div className="pt-4 border-t">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                          You'll need to provide more information for the <strong className="capitalize">{selectedNewRole}</strong> role.
-                        </p>
-                        <div className="flex space-x-2">
-                          <Button onClick={handleAddRole} className="flex-1">
-                            Add {selectedNewRole.charAt(0).toUpperCase() + selectedNewRole.slice(1)} Role
-                          </Button>
-                          <Button variant="outline" onClick={() => setSelectedNewRole('')}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
+          <div className="flex items-center justify-center md:justify-start text-lg mt-2 text-slate-300">
+            <AtSign className="h-5 w-5 mr-2 text-slate-400" />
+            <span>{profile.email}</span>
           </div>
           
-          {isEditing && (
-            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <p className="text-sm text-blue-700 dark:text-blue-300 text-center">
-                Please fill in the required information for your new role as a {activeRole}.
-              </p>
-            </div>
-          )}
-           
-          {flatUserRoles.length > 1 && (
-            <div className="mt-4">
-              <Select value={activeRole} onValueChange={onRoleChange}>
-                <SelectTrigger className="w-[180px] text-sm">
-                  <SelectValue placeholder="Switch role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {flatUserRoles.map((role) => (
-                    <SelectItem key={role} value={role} className="capitalize">
-                       {getRoleIcon(role)} {role.charAt(0).toUpperCase() + role.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex items-center justify-center md:justify-start text-md mt-2 text-slate-400">
+            <User className="h-5 w-5 mr-2" />
+            <span>{profile.gender}, {profile.age} years old</span>
+          </div>
+          
+          {profile.roles && profile.roles.length > 0 && (
+            <div className="mt-5 pt-3 border-t border-slate-700/50 flex flex-wrap justify-center md:justify-start items-center gap-3">
+              <h3 className="text-sm font-semibold text-slate-300 mr-2 flex items-center">
+                <Shield className="h-5 w-5 mr-1.5 text-slate-400" /> Roles:
+              </h3>
+              {profile.roles.map((role, index) => (
+                <span key={index} className="flex items-center bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-full">
+                  {getRoleIcon(role)}
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </span>
+              ))}
             </div>
           )}
         </div>

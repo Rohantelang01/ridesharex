@@ -39,8 +39,8 @@ export function SignupForm() {
       email: "",
       phone: "",
       password: "",
-      age: "",
-      gender: "",
+      age: 18,
+      gender: "male",
     },
   });
 

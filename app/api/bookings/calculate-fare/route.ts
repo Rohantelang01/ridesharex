@@ -1,166 +1,133 @@
 
-import mongoose, { Document, Schema } from 'mongoose';
-import { IWallet, walletSchema } from './Wallet';
-import { IVehicle } from './Vehicle'; // Import the new Vehicle interface
+import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/db';
+import { User } from '@/models/User';
+import { Vehicle } from '@/models/Vehicle'; 
 
-// Interface for Permanent Address
-export interface IPermanentAddress {
-  addressLine1: string;
-  addressLine2?: string;
-  village?: string;
-  tehsil?: string;
-  district: string;
-  state: string;
-  pincode: string;
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
+const MAPPLS_API_KEY = process.env.MAPPLS_API_KEY;
+
+async function getDistanceMatrix(start: string, destination: string, resource: string = "driving") {
+    // Validate coordinates format
+    const coordRegex = /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/;
+    if (!coordRegex.test(start) || !coordRegex.test(destination)) {
+        throw new Error('Invalid coordinates format for Mappls API. Expected "lat,lng".');
+    }
+
+    const url = `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_API_KEY}/distance_matrix/json?start=${start}&destination=${destination}&resource=${resource}`;
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Mappls API failed with status: ${response.status}. Details: ${errorText}`);
+        }
+        const data = await response.json();
+        
+        if (data.results && data.results.elements && data.results.elements.length > 0) {
+            return data.results.elements[0];
+        } else {
+            throw new Error('Invalid response structure from Mappls API.');
+        }
+
+    } catch (error) {
+        console.error("Mappls distance matrix error:", error);
+        throw error;
+    }
 }
 
-// Interface for Current Location
-export interface ICurrentLocation {
-  address?: string;
-  coordinates: {
-    type: 'Point';
-    coordinates: [number, number]; // [longitude, latitude]
-  };
-  lastUpdated?: Date;
+export async function POST(req: NextRequest) {
+    try {
+        await dbConnect();
+
+        const { bookingType, pickup, dropoff, driverId } = await req.json();
+
+        if (!bookingType || !pickup || !dropoff || !driverId) {
+            return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+        }
+
+        const driver = await User.findById(driverId).populate({
+            path: 'driverInfo.vehicle',
+            model: Vehicle
+        });
+
+        if (!driver || !driver.roles.includes('driver') || !driver.driverInfo || !driver.driverInfo.vehicle) {
+            return NextResponse.json({ message: 'Driver or associated vehicle not found' }, { status: 404 });
+        }
+
+        const vehicle = driver.driverInfo.vehicle as any; // Cast to access vehicle properties
+
+        let totalDistance = 0;
+        let totalDuration = 0;
+        let routeDescription = [];
+
+        const passengerPickup = `${pickup.coordinates.lat},${pickup.coordinates.lng}`;
+        const passengerDropoff = `${dropoff.coordinates.lat},${dropoff.coordinates.lng}`;
+
+        if (bookingType === 'instant') {
+             if (!driver.currentLocation || !driver.currentLocation.coordinates) {
+                return NextResponse.json({ message: "Driver's live location is not available." }, { status: 400 });
+            }
+            const driverLiveLocation = `${driver.currentLocation.coordinates.coordinates[1]},${driver.currentLocation.coordinates.coordinates[0]}`; // lat,lng
+
+            const leg1 = await getDistanceMatrix(driverLiveLocation, passengerPickup);
+            totalDistance += leg1.distance;
+            totalDuration += leg1.duration;
+            routeDescription.push("Driver to Pickup");
+
+            const leg2 = await getDistanceMatrix(passengerPickup, passengerDropoff);
+            totalDistance += leg2.distance;
+            totalDuration += leg2.duration;
+            routeDescription.push("Pickup to Dropoff");
+
+        } else if (bookingType === 'advance') {
+            if (!driver.permanentAddress || !driver.permanentAddress.coordinates) {
+                return NextResponse.json({ message: "Driver's permanent address is not set." }, { status: 400 });
+            }
+            const driverHome = `${driver.permanentAddress.coordinates.lat},${driver.permanentAddress.coordinates.lng}`;
+            let currentLocation = driverHome;
+            routeDescription.push("Driver's Home");
+
+            if (driver.driverInfo.vehicleType === 'rented') {
+                const owner = await User.findById(vehicle.owner);
+                if (!owner || !owner.permanentAddress || !owner.permanentAddress.coordinates) {
+                     return NextResponse.json({ message: 'Vehicle owner or their address not found' }, { status: 404 });
+                }
+                const ownerGarage = `${owner.permanentAddress.coordinates.lat},${owner.permanentAddress.coordinates.lng}`;
+
+                const leg1 = await getDistanceMatrix(currentLocation, ownerGarage);
+                totalDistance += leg1.distance;
+                totalDuration += leg1.duration;
+                currentLocation = ownerGarage;
+                routeDescription.push("Owner's Garage");
+            }
+            
+            const leg2 = await getDistanceMatrix(currentLocation, passengerPickup);
+            totalDistance += leg2.distance;
+            totalDuration += leg2.duration;
+            routeDescription.push("Passenger's Pickup");
+
+            const leg3 = await getDistanceMatrix(passengerPickup, passengerDropoff);
+            totalDistance += leg3.distance;
+            totalDuration += leg3.duration;
+            routeDescription.push("Passenger's Dropoff");
+
+        } else {
+            return NextResponse.json({ message: 'Invalid booking type' }, { status: 400 });
+        }
+
+        const perKmRate = vehicle.perKmRate;
+        const totalFare = (totalDistance / 1000) * perKmRate;
+
+        return NextResponse.json({
+            estimatedDistance: totalDistance,
+            estimatedDuration: totalDuration,
+            totalFare: totalFare.toFixed(2),
+            route: routeDescription.join(" -> "),
+            vehicleId: vehicle._id
+        }, { status: 200 });
+
+    } catch (error: any) {
+        console.error('Error calculating fare:', error);
+        return NextResponse.json({ message: `Internal server error: ${error.message}` }, { status: 500 });
+    }
 }
-
-// Interface for Verification
-export interface IVerification {
-  email?: boolean;
-  phone?: boolean;
-  kyc?: boolean;
-}
-
-// Interface for Driver Information
-export interface IDriverInfo {
-  licenseNumber?: string;
-  licenseImage?: string;
-  idProof?: string;
-  hourlyRate?: number;
-  status?: 'OFFLINE' | 'AVAILABLE' | 'ON_TRIP' | 'SCHEDULED';
-  vehicleType?: 'own' | 'rented';
-  vehicle?: IVehicle['_id']; // Reference to a vehicle
-}
-
-// Interface for Owner Information
-export interface IOwnerInfo {
-  vehicles: IVehicle['_id'][]; // Array of vehicle references
-}
-
-// Interface for Public Information
-export interface IPublicInfo {
-  rating?: {
-    average?: number;
-    totalRatings?: number;
-  };
-  totalTrips?: number;
-  memberSince?: Date;
-}
-
-// Main User Interface
-export interface IUser extends Document {
-  name: string;
-  email: string;
-  phone: string;
-  password?: string;
-  profileImage?: string;
-  age: number;
-  gender: string;
-  permanentAddress?: IPermanentAddress;
-  currentLocation?: ICurrentLocation;
-  roles: Array<'passenger' | 'driver' | 'owner'>;
-  verification?: IVerification;
-  driverInfo?: IDriverInfo;
-  ownerInfo?: IOwnerInfo;
-  publicInfo?: IPublicInfo;
-  wallet?: IWallet;
-  isActive?: boolean;
-  lastLogin?: Date;
-}
-
-const permanentAddressSchema = new Schema<IPermanentAddress>({
-  addressLine1: { type: String, required: true },
-  addressLine2: String,
-  village: String,
-  tehsil: String,
-  district: { type: String, required: true },
-  state: { type: String, required: true },
-  pincode: { type: String, required: true },
-  coordinates: {
-      lat: { type: Number, required: true },
-      lng: { type: Number, required: true },
-  }
-}, { _id: false });
-
-const currentLocationSchema = new Schema<ICurrentLocation>({
-  address: String,
-  coordinates: {
-    type: { type: String, enum: ['Point'], default: 'Point', required: true },
-    coordinates: { type: [Number], required: true } // [longitude, latitude]
-  },
-  lastUpdated: { type: Date, default: Date.now }
-}, { _id: false });
-
-currentLocationSchema.index({ coordinates: '2dsphere' });
-
-const verificationSchema = new Schema<IVerification>({
-  email: { type: Boolean, default: false },
-  phone: { type: Boolean, default: false },
-  kyc: { type: Boolean, default: false }
-}, { _id: false });
-
-const driverInfoSchema = new Schema<IDriverInfo>({
-  licenseNumber: String,
-  licenseImage: String,
-  idProof: String,
-  hourlyRate: { type: Number, default: 0 },
-  status: {
-    type: String,
-    enum: ['OFFLINE', 'AVAILABLE', 'ON_TRIP', 'SCHEDULED'],
-    default: 'OFFLINE'
-  },
-  vehicleType: {
-    type: String,
-    enum: ['own', 'rented']
-  },
-  vehicle: { type: Schema.Types.ObjectId, ref: 'Vehicle' }
-}, { _id: false });
-
-const ownerInfoSchema = new Schema<IOwnerInfo>({
-  vehicles: [{ type: Schema.Types.ObjectId, ref: 'Vehicle' }]
-}, { _id: false });
-
-const publicInfoSchema = new Schema<IPublicInfo>({
-  rating: {
-    average: { type: Number, default: 0 },
-    totalRatings: { type: Number, default: 0 }
-  },
-  totalTrips: { type: Number, default: 0 },
-  memberSince: { type: Date, default: Date.now }
-}, { _id: false });
-
-const userSchema = new Schema<IUser>({
-  name: { type: String, required: true, trim: true },
-  email: { type: String, required: true, unique: true, lowercase: true },
-  phone: { type: String, required: true, unique: true },
-  password: { type: String, select: false },
-  profileImage: { type: String, default: null },
-  age: { type: Number, required: true },
-  gender: { type: String, required: true },
-  permanentAddress: { type: permanentAddressSchema, required: false },
-  currentLocation: currentLocationSchema,
-  roles: [{ type: String, enum: ['passenger', 'driver', 'owner'], default: ['passenger'] }],
-  verification: verificationSchema,
-  driverInfo: driverInfoSchema,
-  ownerInfo: ownerInfoSchema,
-  publicInfo: publicInfoSchema,
-  wallet: walletSchema,
-  isActive: { type: Boolean, default: true },
-  lastLogin: Date,
-}, { timestamps: true });
-
-export const User = mongoose.models.User || mongoose.model<IUser>('User', userSchema);

@@ -1,15 +1,19 @@
 // lib/db.ts
 import mongoose from "mongoose";
 
-// Define proper types for caching
+// Import all models to ensure they are registered with Mongoose
+import "../models/User";
+import "../models/Vehicle";
+import "../models/Trip";
+import "../models/Wallet";
+
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
 }
 
-// Extend global object with proper typing
 declare global {
-  var mongoose: MongooseCache | undefined;
+  var mongooseCache: MongooseCache | undefined;
 }
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -18,10 +22,10 @@ if (!MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI in .env");
 }
 
-let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+let cached: MongooseCache = global.mongooseCache || { conn: null, promise: null };
 
-if (!global.mongoose) {
-  global.mongoose = cached;
+if (!global.mongooseCache) {
+  global.mongooseCache = cached;
 }
 
 async function connectToDB() {

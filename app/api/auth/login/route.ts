@@ -16,15 +16,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
+    
     if (!user) {
-      // More specific error message for development
       return NextResponse.json({ message: "No account found with that email address." }, { status: 401 });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      // More specific error message for development
       return NextResponse.json({ message: "The password you entered is incorrect." }, { status: 401 });
     }
 
@@ -33,8 +32,16 @@ export async function POST(req: NextRequest) {
       throw new Error("JWT_SECRET is not defined in environment variables");
     }
 
+    // *** FIX: Use 'userId' in the token payload to match what the profile API expects ***
+    const tokenPayload = {
+      userId: user._id,
+      name: user.name,
+      email: user.email,
+      roles: user.roles,
+    };
+
     const token = jwt.sign(
-      { userId: user._id, name: user.name, email: user.email },
+      tokenPayload,
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -47,14 +54,18 @@ export async function POST(req: NextRequest) {
       path: "/",
     });
 
+    // The user object in the response body can still use 'id' for frontend convenience
+    const userResponse = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      roles: user.roles,
+    };
+
     return NextResponse.json({
       message: "Login successful",
       token: token, 
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+      user: userResponse,
     }, { status: 200 });
 
   } catch (error) {

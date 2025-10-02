@@ -4,7 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Clock, DollarSign, MapPin, Shield, Star, User, Car, Briefcase, Wallet } from "lucide-react";
-import Map from "@/components/common/Map";
+import dynamic from 'next/dynamic';
+
+// Dynamically import the Map component with SSR turned off
+const Map = dynamic(() => import('@/components/common/Map'), {
+  ssr: false,
+  loading: () => <div className="h-[500px] w-full flex items-center justify-center bg-gray-200"><p>Loading map...</p></div>,
+});
+
 
 // 1. Hero Section (Placeholder Removed)
 const HeroSection = () => (

@@ -14,25 +14,31 @@ import {
 // So, the ProfileResponse is essentially the IUser object with a potential wallet.
 
 interface UseProfileReturn {
-  user: IUser | null;
+  profile: IUser | null; // Changed from 'user' to 'profile' for clarity
   wallet: IWallet | null;
   loading: boolean;
   error: string | null;
   fetchProfile: () => Promise<void>;
   updateProfile: (data: Partial<IUser>) => Promise<boolean>;
-  updateSection: (section: string, data: any) => Promise<boolean>; // Added this line
+  updateSection: (section: string, data: any) => Promise<boolean>;
   isUpdating: boolean;
 }
 
 export const useProfile = (): UseProfileReturn => {
-  const [user, setUser] = useState<IUser | null>(null);
+  const [profile, setProfile] = useState<IUser | null>(null); // Changed from 'user' to 'profile'
   const [wallet, setWallet] = useState<IWallet | null>(null);
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { token, loading: authLoading } = useAuth(); // Use 'token' to check auth status
 
   const fetchProfile = useCallback(async (): Promise<void> => {
+    if (!token) {
+      setLoading(false);
+      setError("Authentication token not found. Please log in.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -41,16 +47,17 @@ export const useProfile = (): UseProfileReturn => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch profile');
+        throw new Error(errorData.message || 'Failed to fetch profile');
       }
 
       const data: IUser = await response.json();
-      setUser(data);
+      setProfile(data);
 
       if ('wallet' in data && data.wallet) {
         setWallet(data.wallet as IWallet);
@@ -61,21 +68,19 @@ export const useProfile = (): UseProfileReturn => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (!authLoading) {
-      if (isAuthenticated) {
-        fetchProfile();
-      } else {
-        setLoading(false);
-        setUser(null);
-        setError("Please log in to view your profile.");
-      }
+      fetchProfile();
     }
-  }, [authLoading, isAuthenticated, fetchProfile]);
+  }, [authLoading, fetchProfile]);
 
   const updateProfile = async (updateData: Partial<IUser>): Promise<boolean> => {
+    if (!token) {
+        setError("Authentication token not found.");
+        return false;
+    }
     setIsUpdating(true);
     setError(null);
 
@@ -84,17 +89,18 @@ export const useProfile = (): UseProfileReturn => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update profile');
+        throw new Error(errorData.message || 'Failed to update profile');
       }
 
       const data: ProfileUpdateResponse = await response.json();
-      setUser(data.user);
+      setProfile(data.user);
       if ('wallet' in data && data.wallet) {
         setWallet(data.wallet as IWallet);
       }
@@ -108,6 +114,10 @@ export const useProfile = (): UseProfileReturn => {
   };
 
   const updateSection = async (section: string, sectionData: any): Promise<boolean> => {
+    if (!token) {
+      setError("Authentication token not found.");
+      return false;
+    }
     setIsUpdating(true);
     setError(null);
     try {
@@ -115,17 +125,18 @@ export const useProfile = (): UseProfileReturn => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ section, data: sectionData }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to update ${section} section`);
+        throw new Error(errorData.message || `Failed to update ${section} section`);
       }
 
       const data: ProfileUpdateResponse = await response.json();
-      setUser(data.user);
+      setProfile(data.user);
       if ('wallet' in data && data.wallet) {
         setWallet(data.wallet as IWallet);
       }
@@ -139,13 +150,13 @@ export const useProfile = (): UseProfileReturn => {
   };
 
   return {
-    user,
+    profile,
     wallet,
     loading,
     error,
     fetchProfile,
     updateProfile,
-    updateSection, // And this line
+    updateSection,
     isUpdating,
   };
 };

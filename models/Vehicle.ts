@@ -4,8 +4,9 @@ import { IUser } from './User';
 
 export interface IVehicle extends Document {
   owner: IUser['_id'];
+  assignedDriver?: IUser['_id']; // Optional: The user assigned to drive this vehicle
   make: string;
-  model: string;
+  vehicleModel: string; // Changed from model to vehicleModel
   year: number;
   color: string;
   plateNumber: string;
@@ -20,8 +21,9 @@ export interface IVehicle extends Document {
 
 const vehicleSchema = new Schema<IVehicle>({
   owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  assignedDriver: { type: Schema.Types.ObjectId, ref: 'User' }, // Can be null
   make: { type: String, required: true },
-  model: { type: String, required: true },
+  vehicleModel: { type: String, required: true }, // Changed from model to vehicleModel
   year: { type: Number, required: true },
   color: { type: String, required: true },
   plateNumber: { type: String, required: true, unique: true },

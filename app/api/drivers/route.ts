@@ -1,46 +1,27 @@
 
 import { NextResponse } from "next/server";
-import connectToDB from "../../../lib/db";
-import { User } from "../../../models/User";
-
-const MAX_DISTANCE_IN_METERS = 10 * 1000; // 10 kilometers
+import connectToDB from "@/lib/db";
+import { User } from "@/models/User";
+import { Vehicle } from "@/models/Vehicle"; // Ensure Vehicle model is registered
 
 export async function GET(req: Request) {
   try {
-    const url = new URL(req.url);
-    const latitude = parseFloat(url.searchParams.get("latitude") || "0");
-    const longitude = parseFloat(url.searchParams.get("longitude") || "0");
-
-    if (!latitude || !longitude) {
-      return NextResponse.json(
-        { error: "Latitude and longitude are required" },
-        { status: 400 }
-      );
-    }
-
     await connectToDB();
 
-    const drivers = await User.find({
-      roles: "driver",
-      "driverInfo.status": "AVAILABLE",
-      "currentLocation.coordinates": {
-        $near: {
-          $geometry: {
-            type: "Point",
-            coordinates: [longitude, latitude],
-          },
-          $maxDistance: MAX_DISTANCE_IN_METERS,
-        },
-      },
-    });
+    const users = await User.find({
+      roles: { $in: ["driver", "owner"] },
+    }).populate("ownerInfo.vehicles");
 
-    return NextResponse.json(drivers);
+    // Log the entire data object for each user
+    console.log("All drivers and owners data:", JSON.stringify(users, null, 2));
+
+    return NextResponse.json(users);
   } catch (err: unknown) {
     const errorMessage =
       err instanceof Error ? err.message : "Unknown error occurred";
     return NextResponse.json(
       {
-        error: "Failed to fetch drivers",
+        error: "Failed to fetch users",
         details: errorMessage,
       },
       { status: 500 }
